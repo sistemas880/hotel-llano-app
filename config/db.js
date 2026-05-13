@@ -1,19 +1,18 @@
 const { Pool } = require('pg');
 
-// Railway usa la variable de entorno DATABASE_URL
+const isProduction = process.env.DATABASE_URL ? true : false;
+
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false // Obligatorio para conexiones seguras en la nube
-    }
+    // Si hay DATABASE_URL (Railway), la usa. Si no, usa tus datos locales.
+    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:qzpm@localhost:5432/hotel_llano_local',
+    ssl: isProduction ? { rejectUnauthorized: false } : false 
 });
 
-// Probamos la conexión al iniciar
 pool.query('SELECT NOW()', (err, res) => {
     if (err) {
-        console.error('❌ Error conectando a la base de datos desde el módulo DB:', err.message);
+        console.error('❌ Error en DB:', err.message);
     } else {
-        console.log('✅ Módulo DB conectado correctamente a Railway');
+        console.log('✅ Base de datos conectada (Modo: ' + (isProduction ? 'Producción' : 'Local') + ')');
     }
 });
 

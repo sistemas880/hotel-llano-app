@@ -4,14 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 // IMPORTAR NUESTROS MÓDULOS MODULARES
-const { Pool } = require('pg');
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL, // Railway inyectará esto automáticamente
-    ssl: {
-        rejectUnauthorized: false // Esto es obligatorio para conectar con Railway desde afuera
-    }
-});
+const pool = require('./config/db');
 
 const whatsappService = require('./services/whatsappService');
 const reservasRoutes = require('./routes/reservas'); // <-- Nueva línea
@@ -252,6 +245,32 @@ io.on('connection', (socket) => {
         }
     });
 });
+
+
+const cron = require('node-cron');
+
+/// Programado para las 9:40 AM hora de Colombia
+cron.schedule('0 23 * * *', async () => {
+    console.log('⏰ [CRON] Iniciando limpieza automática de reservas antiguas (9:40 AM)...');
+    try {
+        const hoy = new Date().toISOString().split('T')[0];
+        
+        const query = 'DELETE FROM reservations WHERE fsalid_reh < $1';
+        const resultado = await pool.query(query, [hoy]);
+        
+        if (resultado.rowCount > 0) {
+            console.log(`🧹 [CRON] ÉXITO: Se eliminaron ${resultado.rowCount} reservas antiguas.`);
+        } else {
+            console.log('✅ [CRON] Sin reservas antiguas para borrar.');
+        }
+    } catch (err) {
+        console.error('❌ [CRON] Error en la ejecución:', err.message);
+    }
+}, {
+    scheduled: true,
+    timezone: "America/Bogota"
+});
+
 
 // 6. ENCENDIDO (Configurado para Railway)
 const PORT = process.env.PORT || 3000;

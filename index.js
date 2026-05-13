@@ -250,7 +250,7 @@ io.on('connection', (socket) => {
 const cron = require('node-cron');
 
 /// Programado para las 9:40 AM hora de Colombia
-cron.schedule('03 10 * * *', async () => {
+cron.schedule('0 23 * * *', async () => {
     console.log('⏰ [CRON] Iniciando limpieza automática de reservas antiguas (9:40 AM)...');
     try {
         const hoy = new Date().toISOString().split('T')[0];

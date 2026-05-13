@@ -393,30 +393,21 @@ socket.on('mensaje_nuevo', (datos) => {
     // --- NUEVA LÓGICA DE NOTIFICACIÓN ---
     // Solo notificamos si el mensaje es ENTRANTE
     if (datos.direccion === 'entrante') {
-        
-        // A. Sonido de alerta
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-        audio.play().catch(e => console.log("El navegador bloqueó el audio hasta que interactúes con la página."));
+        // 1. Sonido de WhatsApp
+        const audio = new Audio('https://raw.githubusercontent.com/Anshul-99/WhatsApp-Clone-React/master/src/assets/whatsapp_notification.mp3');
+        audio.play().catch(e => console.log("Permiso de audio requerido"));
 
-        // B. Notificación de escritorio
+        // 2. Notificación
         if (Notification.permission === "granted") {
-            const noti = new Notification("🏨 Hotel del Llano: Nuevo Mensaje", {
-                body: `De: ${datos.de || datos.telefono}\n${datos.texto || datos.body}`,
-                icon: "https://cdn-icons-png.flaticon.com/512/1041/1041916.png", // Icono de chat
-                tag: "nuevo-mensaje" // Evita que se amontonen mil notificaciones si mandan muchos mensajes
+            const noti = new Notification("🏨 Mensaje Nuevo", {
+                body: `${datos.de || datos.telefono}: ${datos.texto || datos.body}`,
+                icon: "https://cdn-icons-png.flaticon.com/512/1041/1041916.png",
+                tag: "chat-hotel"
             });
 
-            // Si hace clic en la notificación
-            noti.onclick = (event) => {
-                event.preventDefault(); // Evita comportamientos extraños del navegador
-                
-                // Intenta traer la pestaña al frente
+            noti.onclick = () => {
                 window.focus();
-                
-                // Opcional: Si quieres asegurar que cargue la URL de Railway
-                // window.location.href = window.location.origin;
-
-                noti.close(); // Cierra la notificación después del clic
+                noti.close();
             };
         }
     }

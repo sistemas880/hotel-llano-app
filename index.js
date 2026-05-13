@@ -51,10 +51,11 @@ app.get('/historial', async (req, res) => {
 // CONTACTOS: Obtener lista de números únicos
 app.get('/contactos', async (req, res) => {
     try {
-        // Esta consulta busca los teléfonos únicos pero los ordena 
-        // basándose en la fecha (timestamp) del último mensaje de cada uno
         const query = `
-            SELECT telefono, MAX(created_at) as ultima_fecha
+            SELECT 
+                telefono, 
+                MAX(created_at) as ultima_fecha,
+                COUNT(*) FILTER (WHERE leido = FALSE AND direction = 'incoming') as sin_leer
             FROM messages
             GROUP BY telefono
             ORDER BY ultima_fecha DESC
@@ -62,8 +63,19 @@ app.get('/contactos', async (req, res) => {
         const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: "Error al obtener contactos" });
+    }
+});
+
+app.post('/api/leer-mensajes/:telefono', async (req, res) => {
+    try {
+        await pool.query(
+            "UPDATE messages SET leido = TRUE WHERE telefono = $1 AND direction = 'incoming'",
+            [req.params.telefono]
+        );
+        res.sendStatus(200);
+    } catch (err) {
+        res.sendStatus(500);
     }
 });
 

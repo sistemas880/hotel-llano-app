@@ -42,6 +42,10 @@
             max-width: 150px; /* Ajusta este ancho según tu logo */
             padding: 10px;
         }
+
+        .unread-chat {
+    border-left: 4px solid #198754 !important; /* Una barrita verde a la izquierda */
+}
     </style>
 </head>
 <body>
@@ -302,48 +306,68 @@ async function cargarContactos() {
         
         contactos.forEach(c => {
             const item = document.createElement('div');
-            item.className = 'list-group-item list-group-item-action contact-item p-3 border-0 border-bottom';
             
-            // --- LÓGICA DE FECHA INTELIGENTE ---
+            // --- CAMBIO 1: Clase dinámica ---
+            // Si tiene mensajes sin leer, le ponemos un fondo muy sutil (bg-light) y negrita (fw-bold)
+            const tienePendientes = c.sin_leer > 0;
+            const claseUnread = tienePendientes ? 'bg-light unread-chat' : '';
+            
+            item.className = `list-group-item list-group-item-action contact-item p-3 border-0 border-bottom ${claseUnread}`;
+            
+            // --- LÓGICA DE FECHA (Mantenemos la tuya) ---
             let fechaMostrar = '';
             if (c.ultima_fecha) {
                 const fechaMsg = new Date(c.ultima_fecha);
                 const hoy = new Date();
                 const ayer = new Date();
                 ayer.setDate(hoy.getDate() - 1);
-
                 const opcionesHora = { hour: '2-digit', minute: '2-digit', hour12: false };
 
                 if (fechaMsg.toDateString() === hoy.toDateString()) {
-                    // Si es hoy: "13:59"
                     fechaMostrar = fechaMsg.toLocaleTimeString([], opcionesHora);
                 } else if (fechaMsg.toDateString() === ayer.toDateString()) {
-                    // Si fue ayer: "Ayer"
                     fechaMostrar = 'Ayer';
                 } else {
-                    // Si es más viejo: "12/05"
                     fechaMostrar = `${fechaMsg.getDate()}/${fechaMsg.getMonth() + 1}`;
                 }
             }
-            // ----------------------------------
 
+            // --- CAMBIO 2: HTML con Indicador ---
             item.innerHTML = `
                 <div class="d-flex align-items-center justify-content-between w-100">
                     <div class="d-flex align-items-center">
-                        <div class="rounded-circle bg-success text-white p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                            <i class="bi bi-person-fill"></i>
+                        <div class="position-relative">
+                            <div class="rounded-circle bg-success text-white p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            ${tienePendientes ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 12px; height: 12px;"></span>' : ''}
                         </div>
                         <div>
-                            <h6 class="mb-0">${c.telefono}</h6>
-                            <small class="text-muted">Ver conversación</small>
+                            <h6 class="mb-0 ${tienePendientes ? 'fw-bold text-dark' : ''}">${c.telefono}</h6>
+                            <small class="${tienePendientes ? 'text-success fw-bold' : 'text-muted'}">
+                                ${tienePendientes ? 'Nuevo mensaje...' : 'Ver conversación'}
+                            </small>
                         </div>
                     </div>
-                    <small class="text-muted fw-lighter" style="font-size: 0.75rem;">${fechaMostrar}</small>
+                    <div class="text-end">
+                        <small class="${tienePendientes ? 'text-success fw-bold' : 'text-muted'} fw-lighter" style="font-size: 0.75rem;">${fechaMostrar}</small>
+                    </div>
                 </div>
             `;
 
-            item.onclick = () => {
+            // --- CAMBIO 3: Marcar como leído al hacer clic ---
+            item.onclick = async () => {
                 contactoSeleccionado = c.telefono;
+                
+                // Si el chat tenía mensajes sin leer, avisamos al servidor para que los limpie
+                if (tienePendientes) {
+                    try {
+                        await fetch(`/api/leer-mensajes/${c.telefono}`, { method: 'POST' });
+                        // Refrescamos la lista para que el punto rojo desaparezca inmediatamente
+                        cargarContactos(); 
+                    } catch (e) { console.error("Error al marcar como leído"); }
+                }
+
                 cargarChat(c.telefono);
                 document.querySelectorAll('.contact-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');

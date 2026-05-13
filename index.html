@@ -46,6 +46,12 @@
         .unread-chat {
     border-left: 4px solid #198754 !important; /* Una barrita verde a la izquierda */
 }
+
+th[onclick]:hover {
+    background-color: #343a40 !important;
+    color: #198754 !important; /* El verde de tu hotel */
+}
+
     </style>
 </head>
 <body>
@@ -132,8 +138,12 @@
                                     <tr>
                                         <th>Reserva</th>
                                         <th>Nombre</th>
-                                        <th>Llegada</th>
-                                        <th>Salida</th>
+                                        <th onclick="ordenarTablaPorFecha('fllega_reh')" style="cursor:pointer;">
+                                            Llegada <i class="bi bi-arrow-down-up small"></i>
+                                        </th>
+                                        <th onclick="ordenarTablaPorFecha('fsalid_reh')" style="cursor:pointer;">
+                                            Salida <i class="bi bi-arrow-down-up small"></i>
+                                        </th>
                                         <th>Teléfono</th>
                                         <th class="text-center">Acciones</th>
                                     </tr>
@@ -678,6 +688,40 @@ async function cargarDashboard() {
     } catch (err) {
         console.error("Error cargando dashboard:", err);
     }
+}
+
+// Variable global para rastrear el estado del orden
+let ordenAscendente = true;
+
+function ordenarTablaPorFecha(columna) {
+    const tbody = document.getElementById('tablaReservas');
+    // Convertimos las filas de la tabla en un Array para poder ordenarlas
+    const filas = Array.from(tbody.querySelectorAll('tr'));
+
+    // Cambiamos la dirección del orden
+    ordenAscendente = !ordenAscendente;
+
+    filas.sort((a, b) => {
+        // Extraemos las fechas de las celdas (ajusta el índice si cambiaste el orden de las columnas)
+        // Llegada es índice 2, Salida es índice 3
+        const indice = (columna === 'fllega_reh') ? 2 : 3;
+        
+        // Convertimos el texto de la celda (DD/MM/AAAA) a un objeto Date comparable
+        const fechaA = reconstruirFecha(a.cells[indice].innerText);
+        const fechaB = reconstruirFecha(b.cells[indice].innerText);
+
+        return ordenAscendente ? fechaA - fechaB : fechaB - fechaA;
+    });
+
+    // Limpiamos la tabla y reinsertamos las filas ordenadas
+    tbody.innerHTML = '';
+    filas.forEach(fila => tbody.appendChild(fila));
+}
+
+// Función auxiliar para convertir "5/6/2026" en un objeto Date real
+function reconstruirFecha(fechaStr) {
+    const [dia, mes, anio] = fechaStr.split('/').map(Number);
+    return new Date(anio, mes - 1, dia);
 }
 
 </script>

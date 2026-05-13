@@ -225,6 +225,11 @@
 <script>
     // 1. INICIALIZACIÓN
 const socket = io();
+
+if (Notification.permission !== "granted") {
+        Notification.requestPermission();
+    }
+
 let contactoSeleccionado = "";
 
 
@@ -375,17 +380,39 @@ if(uploadForm) {
 // 6. RECIBIR MENSAJES EN TIEMPO REAL (SOCKET)
 socket.on('mensaje_nuevo', (datos) => {
     // 1. Verificamos si el mensaje pertenece al chat que tenemos abierto en pantalla
-    // (Chequeamos 'telefono' o 'de' porque Meta a veces cambia el nombre del campo)
     const esMismoChat = (datos.telefono === contactoSeleccionado || datos.de === contactoSeleccionado);
     const esMensajePropio = (datos.direccion === 'saliente');
 
     if (esMismoChat || esMensajePropio) {
-        // Usamos la función que creamos antes para pintar la burbuja
         renderizarMensaje(datos);
     }
     
-    // 2. Siempre refrescamos la lista de contactos para que el más reciente suba al inicio
+    // 2. Siempre refrescamos la lista de contactos
     cargarContactos();
+
+    // --- NUEVA LÓGICA DE NOTIFICACIÓN ---
+    // Solo notificamos si el mensaje es ENTRANTE
+    if (datos.direccion === 'entrante') {
+        
+        // A. Sonido de alerta
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+        audio.play().catch(e => console.log("El navegador bloqueó el audio hasta que interactúes con la página."));
+
+        // B. Notificación de escritorio
+        if (Notification.permission === "granted") {
+            const noti = new Notification("🏨 Hotel del Llano: Nuevo Mensaje", {
+                body: `De: ${datos.de || datos.telefono}\n${datos.texto || datos.body}`,
+                icon: "https://cdn-icons-png.flaticon.com/512/1041/1041916.png", // Icono de chat
+                tag: "nuevo-mensaje" // Evita que se amontonen mil notificaciones si mandan muchos mensajes
+            });
+
+            // Si hace clic en la notificación, vuelve a la pestaña del hotel
+            noti.onclick = () => {
+                window.focus();
+                this.close();
+            };
+        }
+    }
 });
 
 function renderizarMensaje(datos) {

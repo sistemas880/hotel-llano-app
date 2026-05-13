@@ -406,10 +406,17 @@ socket.on('mensaje_nuevo', (datos) => {
                 tag: "nuevo-mensaje" // Evita que se amontonen mil notificaciones si mandan muchos mensajes
             });
 
-            // Si hace clic en la notificación, vuelve a la pestaña del hotel
-            noti.onclick = () => {
+            // Si hace clic en la notificación
+            noti.onclick = (event) => {
+                event.preventDefault(); // Evita comportamientos extraños del navegador
+                
+                // Intenta traer la pestaña al frente
                 window.focus();
-                this.close();
+                
+                // Opcional: Si quieres asegurar que cargue la URL de Railway
+                // window.location.href = window.location.origin;
+
+                noti.close(); // Cierra la notificación después del clic
             };
         }
     }

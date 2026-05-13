@@ -304,10 +304,29 @@ async function cargarContactos() {
             const item = document.createElement('div');
             item.className = 'list-group-item list-group-item-action contact-item p-3 border-0 border-bottom';
             
-            // Calculamos la hora formateada (HH:MM)
-            const hora = c.ultima_fecha ? new Date(c.ultima_fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            // --- LÓGICA DE FECHA INTELIGENTE ---
+            let fechaMostrar = '';
+            if (c.ultima_fecha) {
+                const fechaMsg = new Date(c.ultima_fecha);
+                const hoy = new Date();
+                const ayer = new Date();
+                ayer.setDate(hoy.getDate() - 1);
 
-            // Insertamos el nuevo diseño con el justificante entre el nombre y la hora
+                const opcionesHora = { hour: '2-digit', minute: '2-digit', hour12: false };
+
+                if (fechaMsg.toDateString() === hoy.toDateString()) {
+                    // Si es hoy: "13:59"
+                    fechaMostrar = fechaMsg.toLocaleTimeString([], opcionesHora);
+                } else if (fechaMsg.toDateString() === ayer.toDateString()) {
+                    // Si fue ayer: "Ayer"
+                    fechaMostrar = 'Ayer';
+                } else {
+                    // Si es más viejo: "12/05"
+                    fechaMostrar = `${fechaMsg.getDate()}/${fechaMsg.getMonth() + 1}`;
+                }
+            }
+            // ----------------------------------
+
             item.innerHTML = `
                 <div class="d-flex align-items-center justify-content-between w-100">
                     <div class="d-flex align-items-center">
@@ -319,16 +338,13 @@ async function cargarContactos() {
                             <small class="text-muted">Ver conversación</small>
                         </div>
                     </div>
-                    <small class="text-muted fw-lighter">${hora}</small>
+                    <small class="text-muted fw-lighter" style="font-size: 0.75rem;">${fechaMostrar}</small>
                 </div>
             `;
 
-            // Mantener la funcionalidad de selección de chat
             item.onclick = () => {
                 contactoSeleccionado = c.telefono;
                 cargarChat(c.telefono);
-                
-                // Opcional: marcar como activo visualmente
                 document.querySelectorAll('.contact-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
             };

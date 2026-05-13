@@ -38,6 +38,25 @@ app.get('/webhook', (req, res) => {
     }
 });
 
+// Ruta para actualizar el teléfono de una reserva específica
+app.put('/api/reservaciones/:id/telefono', async (req, res) => {
+    const { id } = req.params;
+    const { nuevoTelefono } = req.body;
+
+    try {
+        // Limpiamos el número (solo dejamos dígitos)
+        const telLimpio = nuevoTelefono ? nuevoTelefono.replace(/\D/g, '') : null;
+
+        const query = "UPDATE reservations SET telef_res = $1 WHERE id = $2";
+        await pool.query(query, [telLimpio, id]);
+
+        res.json({ success: true, message: "Teléfono actualizado" });
+    } catch (err) {
+        console.error("Error al actualizar telef_res:", err);
+        res.status(500).json({ error: "Error en el servidor" });
+    }
+});
+
 // HISTORIAL: Obtener mensajes de la DB
 app.get('/historial', async (req, res) => {
     try {

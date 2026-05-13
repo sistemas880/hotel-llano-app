@@ -1,6 +1,6 @@
 const XLSX = require('xlsx');
 const pool = require('../config/db');
-const moment = require('moment'); // <-- NUEVO
+const moment = require('moment');
 
 const excelService = {
     async procesarReservas(filePath) {
@@ -11,7 +11,7 @@ const excelService = {
 
             const data = XLSX.utils.sheet_to_json(worksheet, { 
                 raw: false, 
-                dateNF: 'mm/dd/yyyy' // Intentamos leer el formato del Excel
+                dateNF: 'mm/dd/yyyy' 
             });
 
             let nuevosRegistros = 0;
@@ -20,21 +20,23 @@ const excelService = {
                 const nreser_res = fila['nreser_res'];
                 const nombre_res = fila['nombre_res'];
                 
-                // --- LÓGICA DE FECHAS SEGURA ---
-                // Convertimos lo que venga del Excel a formato Año-Mes-Día
-               // Por estas (añadimos el formato de entrada 'MM/DD/YY HH:mm'):
                 const fllega_reh = moment(fila['fllega_reh'], 'MM/DD/YY HH:mm').format('YYYY-MM-DD');
                 const fsalid_reh = moment(fila['fsalid_reh'], 'MM/DD/YY HH:mm').format('YYYY-MM-DD');
                 
-                const telef_res = String(fila['telef_res'] || '').replace(/\D/g, '');
+                // Si hay teléfono, limpiamos caracteres; si no, dejamos null
+                const telef_res = fila['telef_res'] ? String(fila['telef_res']).replace(/\D/g, '') : null;
 
-                if (!nreser_res || !telef_res || fllega_reh === 'Invalid date') continue;
+                // --- CAMBIO AQUÍ: Eliminamos !telef_res de la validación ---
+                // Ahora solo se salta la fila si falta el número de reserva o la fecha es inválida
+                if (!nreser_res || fllega_reh === 'Invalid date') continue;
 
                 const query = `
                     INSERT INTO reservations 
                     (nreser_res, nombre_res, fllega_reh, fsalid_reh, telef_res)
                     VALUES ($1, $2, $3, $4, $5)
-                    ON CONFLICT (nreser_res) DO NOTHING
+                    ON CONFLICT (nreser_res) DO UPDATE 
+                    SET telef_res = EXCLUDED.telef_res -- Opcional: actualiza el teléfono si la reserva ya existía
+                    WHERE reservations.telef_res IS NULL OR reservations.telef_res = ''
                 `;
                 
                 const values = [nreser_res, nombre_res, fllega_reh, fsalid_reh, telef_res];

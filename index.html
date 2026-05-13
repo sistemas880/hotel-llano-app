@@ -254,43 +254,93 @@ async function cargarReservas() {
         tbody.innerHTML = '';
 
         reservas.forEach(r => {
-        // Lógica para el botón de Bienvenida
-        const btnBienvenidaClase = r.welcome_sent ? 'btn-outline-secondary disabled' : 'btn-success';
-        const btnBienvenidaTexto = r.welcome_sent ? '<i class="bi bi-check2-all"></i> Enviado' : '<i class="bi bi-whatsapp"></i> Bienvenida';
-        
-        // Lógica corregida para el botón de Encuesta
-        const btnEncuestaClase = r.survey_sent ? 'btn-outline-secondary disabled' : 'btn-info text-white';
-        const btnEncuestaTexto = r.survey_sent ? '<i class="bi bi-check-lg"></i> Enviado' : '<i class="bi bi-star-fill"></i> Encuesta';
+            // Lógica para el botón de Bienvenida
+            const btnBienvenidaClase = r.welcome_sent ? 'btn-outline-secondary disabled' : 'btn-success';
+            const btnBienvenidaTexto = r.welcome_sent ? '<i class="bi bi-check2-all"></i> Enviado' : '<i class="bi bi-whatsapp"></i> Bienvenida';
+            
+            // Lógica para el botón de Encuesta
+            const btnEncuestaClase = r.survey_sent ? 'btn-outline-secondary disabled' : 'btn-info text-white';
+            const btnEncuestaTexto = r.survey_sent ? '<i class="bi bi-check-lg"></i> Enviado' : '<i class="bi bi-star-fill"></i> Encuesta';
 
-        // Construimos la fila usando las variables que definimos arriba
-        tbody.innerHTML += `
-            <tr>
-                <td class="align-middle"><span class="badge bg-light text-dark border">${r.nreser_res}</span></td>
-                <td class="align-middle"><strong>${r.nombre_res}</strong></td>
-                <td class="align-middle">${new Date(r.fllega_reh).toLocaleDateString()}</td>
-                <td class="align-middle">${new Date(r.fsalid_reh).toLocaleDateString()}</td>
-                <td class="align-middle">${r.telef_res}</td>
-                <td class="text-center">
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-sm ${btnBienvenidaClase}" 
-                                onclick="${r.welcome_sent ? '' : `enviarBienvenida('${r.nreser_res}', '${r.telef_res}', '${r.nombre_res}')`}"
-                                title="Enviar saludo inicial">
-                            ${btnBienvenidaTexto}
-                        </button>
-                        
-                        <button class="btn btn-sm ${btnEncuestaClase}" 
-                                onclick="${r.survey_sent ? '' : `enviarEncuesta('${r.nreser_res}', '${r.telef_res}', '${r.nombre_res}')`}"
-                                title="Enviar encuesta de satisfacción">
-                            ${btnEncuestaTexto}
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    });
+            // --- NUEVA LÓGICA PARA TELÉFONO ---
+            // Si no hay teléfono, mostramos un aviso y un botón de "Añadir"
+            const tieneTelefono = r.telef_res && r.telef_res.trim() !== '';
+            const displayTelefono = tieneTelefono 
+                ? `<span>${r.telef_res}</span>` 
+                : `<span class="text-danger small"><i class="bi bi-exclamation-triangle"></i> Sin número</span>`;
+            
+            const btnEditarTel = `
+                <button class="btn btn-sm ${tieneTelefono ? 'btn-link text-primary' : 'btn-warning'} p-0 ms-2" 
+                        onclick="solicitarNuevoTel(${r.id}, '${r.telef_res || ''}')" 
+                        title="${tieneTelefono ? 'Editar teléfono' : 'Añadir teléfono'}">
+                    <i class="bi ${tieneTelefono ? 'bi-pencil-square' : 'bi-plus-circle-fill'}"></i>
+                    ${tieneTelefono ? '' : ' Añadir'}
+                </button>`;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="align-middle"><span class="badge bg-light text-dark border">${r.nreser_res}</span></td>
+                    <td class="align-middle"><strong>${r.nombre_res}</strong></td>
+                    <td class="align-middle">${new Date(r.fllega_reh).toLocaleDateString()}</td>
+                    <td class="align-middle">${new Date(r.fsalid_reh).toLocaleDateString()}</td>
+                    
+                    <td class="align-middle">
+                        <div class="d-flex align-items-center justify-content-between">
+                            ${displayTelefono}
+                            ${btnEditarTel}
+                        </div>
+                    </td>
+
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm ${btnBienvenidaClase}" 
+                                    onclick="${r.welcome_sent || !tieneTelefono ? '' : `enviarBienvenida('${r.nreser_res}', '${r.telef_res}', '${r.nombre_res}')`}"
+                                    ${!tieneTelefono ? 'disabled' : ''}
+                                    title="${!tieneTelefono ? 'Falta el teléfono' : 'Enviar saludo inicial'}">
+                                ${btnBienvenidaTexto}
+                            </button>
+                            
+                            <button class="btn btn-sm ${btnEncuestaClase}" 
+                                    onclick="${r.survey_sent || !tieneTelefono ? '' : `enviarEncuesta('${r.nreser_res}', '${r.telef_res}', '${r.nombre_res}')`}"
+                                    ${!tieneTelefono ? 'disabled' : ''}
+                                    title="${!tieneTelefono ? 'Falta el teléfono' : 'Enviar encuesta de satisfacción'}">
+                                ${btnEncuestaTexto}
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
 
     } catch (err) {
         console.error("Error cargando reservas:", err);
+    }
+}
+
+// Esta función abre la ventana emergente y envía el dato al servidor
+async function solicitarNuevoTel(id, telActual) {
+    const nuevoTel = prompt("Ingrese el número de teléfono corregido (ej: 57311...):", telActual);
+    
+    // Si el usuario no cancela el prompt y el número es diferente al actual
+    if (nuevoTel !== null && nuevoTel !== telActual) {
+        try {
+            const respuesta = await fetch(`/api/reservaciones/${id}/telefono`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nuevoTelefono: nuevoTel })
+            });
+
+            if (respuesta.ok) {
+                alert("✅ Teléfono actualizado con éxito.");
+                // Llamamos a cargarReservas para que la tabla se refresque solita
+                cargarReservas(); 
+            } else {
+                alert("❌ Hubo un problema al actualizar en el servidor.");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("❌ Error de conexión.");
+        }
     }
 }
 

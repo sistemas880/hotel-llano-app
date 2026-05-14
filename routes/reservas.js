@@ -45,6 +45,34 @@ router.post('/manual', async (req, res) => {
     }
 });
 
+
+// --- ACTUALIZAR TELÉFONO ---
+router.put('/:id/telefono', async (req, res) => {
+    const { id } = req.params;
+    const { nuevoTelefono } = req.body;
+    const telLimpio = nuevoTelefono ? nuevoTelefono.replace(/\D/g, '') : null;
+
+    try {
+        await pool.query("UPDATE reservations SET telef_res = $1 WHERE id = $2", [telLimpio, id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Error al actualizar teléfono" });
+    }
+});
+
+// --- ACTUALIZAR NOMBRE ---
+router.put('/:id/nombre', async (req, res) => {
+    const { id } = req.params;
+    const { nuevoNombre } = req.body;
+
+    try {
+        await pool.query("UPDATE reservations SET nombre_res = $1 WHERE id = $2", [nuevoNombre.toUpperCase(), id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Error al actualizar nombre" });
+    }
+});
+
 // 2. Listar Reservas para la tabla web
 router.get('/', async (req, res) => {
     try {

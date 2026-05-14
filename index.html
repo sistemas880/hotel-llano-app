@@ -347,7 +347,17 @@ async function cargarReservas() {
             tbody.innerHTML += `
                 <tr>
                     <td class="align-middle"><span class="badge bg-light text-dark border">${r.nreser_res}</span></td>
-                    <td class="align-middle"><strong>${r.nombre_res}</strong></td>
+                    <td class="align-middle">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <strong id="nombre-display-${r.id}">${r.nombre_res}</strong>
+                            
+                            <button class="btn btn-sm btn-link text-primary p-0 ms-2" 
+                                    onclick="solicitarNuevoNombre(${r.id}, '${r.nombre_res}')" 
+                                    title="Editar nombre del huésped">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                        </div>
+                    </td>
                     <td class="align-middle">${new Date(r.fllega_reh).toLocaleDateString()}</td>
                     <td class="align-middle">${new Date(r.fsalid_reh).toLocaleDateString()}</td>
                     
@@ -422,14 +432,42 @@ async function cargarReservas() {
         }
     };
 
+async function solicitarNuevoNombre(id, nombreActual) {
+    // 1. Abrimos el cuadro de diálogo
+    const nuevoNom = prompt("Ingrese el nombre real del huésped:", nombreActual);
+    
+    // 2. Validamos (que no sea nulo, ni vacío, ni igual al anterior)
+    if (nuevoNom !== null && nuevoNom.trim() !== "" && nuevoNom !== nombreActual) {
+        try {
+            // 3. Enviamos la actualización al Backend (reservas.js)
+            const respuesta = await fetch(`/api/reservas/${id}/nombre`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nuevoNombre: nuevoNom.trim() })
+            });
+
+            if (respuesta.ok) {
+                alert("✅ Nombre actualizado con éxito.");
+                // 4. Refrescamos la tabla para mostrar el cambio
+                cargarReservas(); 
+            } else {
+                alert("❌ No se pudo actualizar el nombre.");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("❌ Error de conexión al servidor.");
+        }
+    }
+}
+
 // Esta función abre la ventana emergente y envía el dato al servidor
 async function solicitarNuevoTel(id, telActual) {
     const nuevoTel = prompt("Ingrese el número de teléfono corregido (ej: 57311...):", telActual);
     
-    // Si el usuario no cancela el prompt y el número es diferente al actual
     if (nuevoTel !== null && nuevoTel !== telActual) {
         try {
-            const respuesta = await fetch(`/api/reservaciones/${id}/telefono`, {
+            // CAMBIO AQUÍ: La ruta ahora es /api/reservas (coincide con tu router)
+            const respuesta = await fetch(`/api/reservas/${id}/telefono`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nuevoTelefono: nuevoTel })
@@ -437,7 +475,6 @@ async function solicitarNuevoTel(id, telActual) {
 
             if (respuesta.ok) {
                 alert("✅ Teléfono actualizado con éxito.");
-                // Llamamos a cargarReservas para que la tabla se refresque solita
                 cargarReservas(); 
             } else {
                 alert("❌ Hubo un problema al actualizar en el servidor.");

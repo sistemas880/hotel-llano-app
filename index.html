@@ -52,6 +52,17 @@ th[onclick]:hover {
     color: #198754 !important; /* El verde de tu hotel */
 }
 
+/* Efecto visual al pasar el mouse sobre las columnas ordenables */
+th[onclick] {
+    transition: 0.2s;
+    user-select: none; /* Evita que el texto se sombree al hacer clic rápido */
+}
+
+th[onclick]:hover {
+    background-color: #212529 !important; /* Un gris un poco más claro que el dark */
+    color: #198754 !important; /* Resalta con tu verde esmeralda */
+}
+
     </style>
 </head>
 <body>

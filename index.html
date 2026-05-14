@@ -321,6 +321,11 @@ async function cargarReservas() {
         tbody.innerHTML = '';
 
         reservas.forEach(r => {
+            // --- CORRECCIÓN DE FECHAS (Ignora la zona horaria) ---
+            // Tomamos solo la parte "YYYY-MM-DD" y la invertimos a "DD/MM/YYYY"
+            const fechaLlegada = r.fllega_reh.split('T')[0].split('-').reverse().join('/');
+            const fechaSalida = r.fsalid_reh.split('T')[0].split('-').reverse().join('/');
+
             // Lógica para el botón de Bienvenida
             const btnBienvenidaClase = r.welcome_sent ? 'btn-outline-secondary disabled' : 'btn-success';
             const btnBienvenidaTexto = r.welcome_sent ? '<i class="bi bi-check2-all"></i> Enviado' : '<i class="bi bi-whatsapp"></i> Bienvenida';
@@ -329,9 +334,8 @@ async function cargarReservas() {
             const btnEncuestaClase = r.survey_sent ? 'btn-outline-secondary disabled' : 'btn-info text-white';
             const btnEncuestaTexto = r.survey_sent ? '<i class="bi bi-check-lg"></i> Enviado' : '<i class="bi bi-star-fill"></i> Encuesta';
 
-            // --- NUEVA LÓGICA PARA TELÉFONO ---
-            // Si no hay teléfono, mostramos un aviso y un botón de "Añadir"
-            const tieneTelefono = r.telef_res && r.telef_res.trim() !== '';
+            // Lógica para Teléfono
+            const tieneTelefono = r.telef_res && r.telef_res.trim() !== '' && r.telef_res !== '000';
             const displayTelefono = tieneTelefono 
                 ? `<span>${r.telef_res}</span>` 
                 : `<span class="text-danger small"><i class="bi bi-exclamation-triangle"></i> Sin número</span>`;
@@ -350,7 +354,6 @@ async function cargarReservas() {
                     <td class="align-middle">
                         <div class="d-flex align-items-center justify-content-between">
                             <strong id="nombre-display-${r.id}">${r.nombre_res}</strong>
-                            
                             <button class="btn btn-sm btn-link text-primary p-0 ms-2" 
                                     onclick="solicitarNuevoNombre(${r.id}, '${r.nombre_res}')" 
                                     title="Editar nombre del huésped">
@@ -358,8 +361,8 @@ async function cargarReservas() {
                             </button>
                         </div>
                     </td>
-                    <td class="align-middle">${new Date(r.fllega_reh).toLocaleDateString()}</td>
-                    <td class="align-middle">${new Date(r.fsalid_reh).toLocaleDateString()}</td>
+                    <td class="align-middle">${fechaLlegada}</td>
+                    <td class="align-middle">${fechaSalida}</td>
                     
                     <td class="align-middle">
                         <div class="d-flex align-items-center justify-content-between">

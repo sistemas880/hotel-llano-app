@@ -18,6 +18,33 @@ router.post('/importar', upload.single('file'), async (req, res) => {
     }
 });
 
+
+// Ruta para crear reserva manual (Walk-in)
+// CAMBIO: app por router Y simplificamos la ruta a '/manual'
+router.post('/manual', async (req, res) => {
+    const { nombre, telefono, llegada, salida } = req.body;
+    
+    // Generamos un número de reserva ficticio para Walk-ins
+    const nreser_res = 'W-' + Math.floor(1000 + Math.random() * 9000);
+
+    try {
+        const query = `
+            INSERT INTO reservations (nreser_res, nombre_res, telef_res, fllega_reh, fsalid_reh)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *`;
+        
+        // Limpiamos el teléfono por si llega con espacios o símbolos
+        const telLimpio = telefono ? telefono.replace(/\D/g, '') : '';
+        
+        const values = [nreser_res, nombre.toUpperCase(), telLimpio, llegada, salida];
+        
+        await pool.query(query, values);
+        res.json({ success: true, mensaje: "Huésped agregado correctamente" });
+    } catch (err) {
+        console.error("Error en registro manual:", err);
+        res.status(500).json({ error: "Error al guardar el huésped manual" });
+    }
+});
+
 // 2. Listar Reservas para la tabla web
 router.get('/', async (req, res) => {
     try {

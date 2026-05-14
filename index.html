@@ -138,6 +138,11 @@ th[onclick]:hover {
                                         <i class="bi bi-cloud-arrow-up-fill"></i> Cargar Huéspedes
                                     </button>
                                 </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalManual">
+                                        <i class="bi bi-person-plus-fill"></i> Registrar Walk-in
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -241,6 +246,47 @@ th[onclick]:hover {
     </div>
 </div>
 
+<div class="modal fade" id="modalManual" tabindex="-1" aria-labelledby="modalManualLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalManualLabel"><i class="bi bi-person-plus"></i> Nuevo Huésped Walk-in</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formManual">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Nombre del Huésped</label>
+            <input type="text" id="m_nombre" class="form-control" placeholder="Ej: JUAN PEREZ" required style="text-transform: uppercase;">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Teléfono WhatsApp</label>
+            <div class="input-group">
+                <span class="input-group-text">+57</span>
+                <input type="text" id="m_telefono" class="form-control" placeholder="3112223344" required>
+            </div>
+            <small class="text-muted">Sin espacios ni guiones.</small>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha Llegada</label>
+              <input type="date" id="m_llegada" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha Salida</label>
+              <input type="date" id="m_salida" class="form-control" required>
+            </div>
+          </div>
+          <div class="modal-footer px-0 pb-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success">Registrar Huésped</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -337,6 +383,44 @@ async function cargarReservas() {
         console.error("Error cargando reservas:", err);
     }
 }
+
+
+// 2. Aquí pegas el evento del formulario manual:
+    document.getElementById('formManual').onsubmit = async (e) => {
+        e.preventDefault(); // Evita que la página se recargue
+        
+        const datos = {
+            nombre: document.getElementById('m_nombre').value,
+            telefono: document.getElementById('m_telefono').value,
+            llegada: document.getElementById('m_llegada').value,
+            salida: document.getElementById('m_salida').value
+        };
+
+        try {
+            const res = await fetch('/api/reservas/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+
+            if (res.ok) {
+                alert("✅ Huésped registrado con éxito");
+                
+                // Cerrar el modal automáticamente
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalManual'));
+                modal.hide();
+                
+                // Limpiar el formulario y recargar la tabla
+                document.getElementById('formManual').reset();
+                cargarReservas(); 
+            } else {
+                alert("❌ Error al guardar en la base de datos");
+            }
+        } catch (err) {
+            console.error("Error:", err);
+            alert("❌ No se pudo conectar con el servidor");
+        }
+    };
 
 // Esta función abre la ventana emergente y envía el dato al servidor
 async function solicitarNuevoTel(id, telActual) {
@@ -734,6 +818,7 @@ function reconstruirFecha(fechaStr) {
     const [dia, mes, anio] = fechaStr.split('/').map(Number);
     return new Date(anio, mes - 1, dia);
 }
+
 
 </script>
 

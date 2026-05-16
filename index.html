@@ -362,8 +362,16 @@ async function cargarReservas() {
                         </div>
                     </td>
                     <td class="align-middle">${fechaLlegada}</td>
-                    <td class="align-middle">${fechaSalida}</td>
-                    
+                    <td class="align-middle">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span id="salida-display-${r.id}">${fechaSalida}</span>
+                            <button class="btn btn-sm btn-link text-primary p-0 ms-2" 
+                                    onclick="solicitarNuevaFechaSalida(${r.id}, '${r.fsalid_reh.split('T')[0]}')" 
+                                    title="Editar fecha de salida">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                        </div>
+                    </td>                    
                     <td class="align-middle">
                         <div class="d-flex align-items-center justify-content-between">
                             ${displayTelefono}
@@ -434,6 +442,45 @@ async function cargarReservas() {
             alert("❌ No se pudo conectar con el servidor");
         }
     };
+
+
+async function solicitarNuevaFechaSalida(id, fechaActual) {
+    // Pedimos la fecha usando un prompt. Para mejorar la interfaz en el futuro, podrías usar un modal con un input tipo date.
+    const nuevaFecha = prompt("Introduce la nueva fecha de salida (Formato: AAAA-MM-DD):", fechaActual);
+    
+    if (nuevaFecha === null) return; // Si cancela el prompt, salimos
+    
+    if (nuevaFecha.trim() === '') {
+        alert("La fecha de salida no puede estar vacía.");
+        return;
+    }
+
+    // Opcional: Validación básica de formato AAAA-MM-DD
+    const regexFecha = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regexFecha.test(nuevaFecha)) {
+        alert("Formato incorrecto. Por favor usa el formato AAAA-MM-DD (Ejemplo: 2026-06-30)");
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/reservas/${id}/fecha-salida`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fecha_salida: nuevaFecha })
+        });
+
+        if (response.ok) {
+            alert("Fecha de salida actualizada con éxito");
+            cargarReservas(); // Volvemos a renderizar la tabla con los datos nuevos
+        } else {
+            const errorData = await response.json();
+            alert(`Error al actualizar: ${errorData.message || 'Error desconocido'}`);
+        }
+    } catch (err) {
+        console.error("Error al actualizar la fecha de salida:", err);
+        alert("Ocurrió un error de red al intentar actualizar la fecha.");
+    }
+}    
 
 async function solicitarNuevoNombre(id, nombreActual) {
     // 1. Abrimos el cuadro de diálogo

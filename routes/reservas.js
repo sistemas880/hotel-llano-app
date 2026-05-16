@@ -60,6 +60,22 @@ router.put('/:id/telefono', async (req, res) => {
     }
 });
 
+
+// --- ACTUALIZAR FECHA DE SALIDA ---
+router.put('/:id/fecha-salida', async (req, res) => {
+    const { id } = req.params;
+    const { fecha_salida } = req.body; // Recibe la fecha limpia "AAAA-MM-DD"
+
+    try {
+        // Usamos la columna 'fsalid_reh' que vimos en tu función frontend
+        await pool.query("UPDATE reservations SET fsalid_reh = $1 WHERE id = $2", [fecha_salida, id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Error en DB al actualizar fecha de salida:", err);
+        res.status(500).json({ error: "Error al actualizar fecha de salida" });
+    }
+});
+
 // --- ACTUALIZAR NOMBRE ---
 router.put('/:id/nombre', async (req, res) => {
     const { id } = req.params;

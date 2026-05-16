@@ -76,6 +76,9 @@ th[onclick]:hover {
             <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
                 <button class="nav-link active mb-2" id="v-pills-chat-tab" data-bs-toggle="pill" data-bs-target="#v-pills-chat" type="button">
                     <i class="bi bi-chat-text-fill"></i> Chat en Vivo
+                    <span id="alerta-global-chat" class="badge rounded-pill bg-danger ms-2 d-none" style="font-size: 0.65rem;">
+                        <i class="bi bi-circle-fill"></i> Novedad
+                    </span>
                 </button>
                 
                 <button class="nav-link mb-2" id="v-pills-reservas-tab" data-bs-toggle="pill" data-bs-target="#v-pills-reservas" type="button">
@@ -749,6 +752,35 @@ async function enviarBienvenida(idReserva, telefono, nombre) {
         alert("❌ Error de conexión: Asegúrate de que el servidor esté corriendo.");
     }
 }
+
+
+async function verificarNotificacionesGlobales() {
+    try {
+        const response = await fetch('/api/reservas/notificaciones/pendientes'); // Ajusta la ruta base según tu app
+        const data = await response.json();
+        
+        const indicador = document.getElementById('alerta-global-chat');
+        if (!indicador) return;
+
+        if (data.hayPendientes) {
+            // Si hay al menos un mensaje sin leer, REMOVEMOS 'd-none' (clase Bootstrap para ocultar)
+            indicador.classList.remove('d-none');
+            // Opcional: Si quieres que muestre el número exacto de mensajes:
+            // indicador.innerHTML = `<i class="bi bi-circle-fill"></i> ${data.conteo}`;
+        } else {
+            // Si todo está leído, la volvemos a ocultar
+            indicador.classList.add('d-none');
+        }
+    } catch (err) {
+        console.error("Error al verificar notificaciones globales:", err);
+    }
+}
+
+// 1. Ejecutar de inmediato al cargar la pantalla
+verificarNotificacionesGlobales();
+
+// 2. Revisar automáticamente cada 5 segundos para que la señal cambie sola
+setInterval(verificarNotificacionesGlobales, 5000);
 
 async function enviarEncuesta(idReserva, telefono, nombre) {
     // Confirmación visual

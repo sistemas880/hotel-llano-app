@@ -136,6 +136,25 @@ router.post('/enviar-bienvenida', async (req, res) => {
     }
 });
 
+
+// --- VERIFICAR SI HAY MENSAJES GLOBALES SIN LEER ---
+router.get('/notificaciones/pendientes', async (req, res) => {
+    try {
+        // Contamos cuántos mensajes entrantes están en 'false'
+        const resultado = await pool.query(
+            "SELECT COUNT(*) FROM messages WHERE direction = 'incoming' AND leido = false"
+        );
+        
+        const cantidad = parseInt(resultado.rows[0].count);
+        
+        // Si la cantidad es mayor a 0, enviamos 'hayPendientes: true'
+        res.json({ hayPendientes: cantidad > 0, conteo: cantidad });
+    } catch (err) {
+        console.error("Error al contar mensajes pendientes:", err);
+        res.status(500).json({ error: "Error en el servidor" });
+    }
+});
+
 router.post('/enviar-encuesta', async (req, res) => {
     const { nreser_res, telefono, nombre } = req.body;
 

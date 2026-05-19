@@ -61,20 +61,38 @@ router.put('/:id/telefono', async (req, res) => {
 });
 
 
-// --- ACTUALIZAR FECHA DE SALIDA ---
-router.put('/:id/fecha-salida', async (req, res) => {
-    const { id } = req.params;
-    const { fecha_salida } = req.body; // Recibe la fecha limpia "AAAA-MM-DD"
 
-    try {
-        // Usamos la columna 'fsalid_reh' que vimos en tu función frontend
-        await pool.query("UPDATE reservations SET fsalid_reh = $1 WHERE id = $2", [fecha_salida, id]);
-        res.json({ success: true });
-    } catch (err) {
-        console.error("Error en DB al actualizar fecha de salida:", err);
-        res.status(500).json({ error: "Error al actualizar fecha de salida" });
-    }
-});
+// 4. FUNCIÓN PARA CARGAR EL HISTORIAL DE UN CHAT (MODIFICADA CON HORA)
+async function cargarChat(telefono) {
+    const res = await fetch('/historial');
+    const todos = await res.json();
+    const area = document.getElementById('mensajes');
+    
+    const filtrados = todos.filter(m => m.telefono === telefono);
+    
+    area.innerHTML = ''; 
+    filtrados.forEach(m => {
+        const div = document.createElement('div');
+        const clase = m.direction === 'incoming' ? 'incoming' : 'outgoing';
+        
+        // Mantenemos tus clases originales y agregamos 'position-relative' para acomodar la hora
+        div.className = `message shadow-sm ${clase} position-relative`;
+        
+        // Extraemos la hora usando la columna 'created_at' que vimos en el backend
+        const horaLimpia = formatearHora(m.created_at);
+
+        // Usamos innerHTML en lugar de innerText para poder meter el texto del mensaje Y la hora abajo en su esquina
+        div.innerHTML = `
+            <div class="pe-4" style="word-break: break-word;">${m.body}</div>
+            <span class="text-muted position-absolute" style="font-size: 0.65rem; bottom: 3px; right: 9px; opacity: 0.7;">
+                ${horaLimpia}
+            </span>
+        `;
+        
+        area.appendChild(div);
+    });
+    area.scrollTop = area.scrollHeight;
+}
 
 // --- ACTUALIZAR NOMBRE ---
 router.put('/:id/nombre', async (req, res) => {
@@ -204,6 +222,18 @@ router.post('/enviar-encuesta', async (req, res) => {
         res.status(500).json({ error: "No se pudo enviar la encuesta" });
     }
 });
+
+
+function formatearHora(fechaISO) {
+    if (!fechaISO) return '';
+    const date = new Date(fechaISO);
+    
+    // Extrae las horas y minutos en la hora local de la recepción
+    const horas = String(date.getHours()).padStart(2, '0');
+    const minutos = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${horas}:${minutos}`; // Te devolverá algo como "18:24"
+}
 
 module.exports = router;
 

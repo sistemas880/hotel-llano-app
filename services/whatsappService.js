@@ -2,7 +2,7 @@ const axios = require('axios');
 
 // Configuraciones de Meta (Lo ideal es que luego estas vayan al archivo .env)
 const TOKEN = "EAANXnxOurKkBRCIGKidt17wbGWaZB4avHYrnZCSLKKO76b1FytOaJByUpj4YVqv9pyFxGYPNtyjVqru9RhRyBL3XCEnOZBB3ymryYONgo4I2ubZCL1IZCEsETVkw3bv3MGqOqZACYR8ZBKNBMHBkmuaZAejOZAuTf31eC28tAaqShD2ZCstspljmGdgpqqmJZAK4wZDZD";
-const PHONE_ID = "973694502502248";
+const PHONE_ID = "1170641159455940";
 const VERSION = "v22.0"; // Versión de la API de Meta
 
 const whatsappService = {

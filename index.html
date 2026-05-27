@@ -11,23 +11,23 @@
     <style>
         body { background-color: #f4f7f6; }
         .sidebar { min-height: 100vh; background: #ffffff; border-right: 1px solid #dee2e6; }
+        
         /* Color verde esmeralda uniforme (estilo btn-success) */
         .nav-pills .nav-link.active, 
         .nav-pills .show > .nav-link {
-            background-color: #198754 !important; /* El verde exacto de Bootstrap Success */
+            background-color: #198754 !important; 
             color: white !important;
         }
 
         .nav-link {
-            color: #495057; /* Gris oscuro para los botones no seleccionados */
+            color: #495057; 
             font-weight: 500;
         }
 
         .nav-link:hover {
-            color: #198754; /* Efecto hover con el mismo verde */
+            color: #198754; 
         }
 
-        /* Si tienes el botón de Estadísticas con un ID específico, asegúrate de que no tenga estilos manuales */
         .chat-container { height: 75vh; background: #e5ddd5; border-radius: 8px; }
         .messages-area { height: 65vh; overflow-y: auto; padding: 20px; }
         .message { margin-bottom: 15px; padding: 10px 15px; border-radius: 15px; max-width: 70%; }
@@ -35,49 +35,46 @@
         .outgoing { background: #dcf8c6; align-self: flex-end; margin-left: auto; }
         .contact-item { cursor: pointer; transition: 0.3s; }
         .contact-item:hover { background-color: #f8f9fa; }
+        
         .sidebar img {
             display: block;
             margin-left: auto;
             margin-right: auto;
-            max-width: 150px; /* Ajusta este ancho según tu logo */
+            max-width: 150px; 
             padding: 10px;
         }
 
         .unread-chat {
-    border-left: 4px solid #198754 !important; /* Una barrita verde a la izquierda */
-}
+            border-left: 4px solid #198754 !important; 
+        }
 
-th[onclick]:hover {
-    background-color: #343a40 !important;
-    color: #198754 !important; /* El verde de tu hotel */
-}
+        /* Efecto visual al pasar el mouse sobre las columnas ordenables */
+        th[onclick] {
+            transition: 0.2s;
+            user-select: none; 
+        }
 
-/* Efecto visual al pasar el mouse sobre las columnas ordenables */
-th[onclick] {
-    transition: 0.2s;
-    user-select: none; /* Evita que el texto se sombree al hacer clic rápido */
-}
+        th[onclick]:hover {
+            background-color: #212529 !important; 
+            color: #198754 !important; 
+        }
 
-th[onclick]:hover {
-    background-color: #212529 !important; /* Un gris un poco más claro que el dark */
-    color: #198754 !important; /* Resalta con tu verde esmeralda */
-}
+        /* Altura dinámica inteligente para la tabla */
+        .tabla-reservas-scroll {
+            max-height: 72vh; 
+            min-height: 50vh; 
+            overflow-y: auto;  
+            background-color: #ffffff; 
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
 
-/* Altura fija con scroll para la tabla de gestión de reservas */
-.tabla-reservas-scroll {
-    max-height: 75vh; /* Ocupará el 60% de la pantalla antes de activar el scroll */
-    overflow-y: auto;  /* Activa la barra vertical sólo si es necesario */
-    border-bottom: 1px solid #dee2e6;
-}
-
-/* Mantiene los encabezados oscuros fijos arriba mientras bajas en la lista */
-.tabla-reservas-scroll table thead {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-}
-
-</style>
+        .tabla-reservas-scroll table thead {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+    </style>
 </head>
 <body>
 
@@ -103,7 +100,6 @@ th[onclick]:hover {
                     <i class="bi bi-pie-chart-fill"></i> Estadísticas
                 </button>
             </div>
-            
         </nav>
 
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
@@ -118,8 +114,7 @@ th[onclick]:hover {
                             <div class="p-3 bg-light border-bottom">
                                 <input type="text" class="form-control" placeholder="Buscar contacto...">
                             </div>
-                            <div id="listaContactos" class="list-group list-group-flush">
-                                </div>
+                            <div id="listaContactos" class="list-group list-group-flush"></div>
                         </div>
                         <div class="col-md-8 d-flex flex-column chat-container">
                             <div id="mensajes" class="messages-area d-flex flex-column">
@@ -146,37 +141,34 @@ th[onclick]:hover {
                     <div class="card shadow-sm mb-2">
                         <div class="card-body bg-light py-2 px-3">
                             <form id="uploadForm" class="row g-2 align-items-center">
-                                
                                 <div class="col-md-6 d-flex align-items-center">
                                     <span class="fw-bold text-secondary me-2 text-nowrap" style="font-size: 0.9rem;">Subir Zeus:</span>
                                     <input type="file" id="excelFile" class="form-control form-control-sm" accept=".xlsx, .xls">
                                 </div>
-                                
                                 <div class="col-md-3">
                                     <button type="submit" class="btn btn-primary btn-sm w-100">
                                         <i class="bi bi-cloud-arrow-up-fill"></i> Cargar Excel
                                     </button>
                                 </div>
-                                
                                 <div class="col-md-3">
                                     <button type="button" class="btn btn-success btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalManual">
                                         <i class="bi bi-person-plus-fill"></i> Registrar Walk-in
                                     </button>
                                 </div>
-                                
                             </form>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <span class="input-group-text bg-white text-muted shadow-sm border-end-0">
-                                <i class="bi bi-search text-success"></i>
-                            </span>
-                            <input type="text" id="buscadorTabla" class="form-control shadow-sm border-start-0 py-2" placeholder="Buscar por nombre de huésped o número de reserva en tiempo real...">
+                    <div class="row mb-2">
+                        <div class="col-md-6 mx-auto">
+                            <div class="input-group input-group-sm shadow-sm">
+                                <span class="input-group-text bg-white text-muted border-end-0">
+                                    <i class="bi bi-search text-success"></i>
+                                </span>
+                                <input type="text" id="buscadorTabla" class="form-control border-start-0 py-1.5" placeholder="Buscar por nombre o reserva...">
+                            </div>
                         </div>
-                    </div>    
-                </div>
+                    </div> 
 
                     <div class="card shadow-sm">
                         <div class="table-responsive tabla-reservas-scroll">
@@ -195,82 +187,78 @@ th[onclick]:hover {
                                         <th class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tablaReservas">
-                                    </tbody>
+                                <tbody id="tablaReservas"></tbody>
                             </table>
                         </div>
                     </div>
-                </div>
+                </div> <div class="tab-pane fade" id="v-pills-stats" role="tabpanel">
+                    <div class="pt-3 pb-2 mb-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h2>Dashboard de Satisfacción</h2>
+                        <a href="/api/exportar-encuestas" class="btn btn-success">
+                            <i class="bi bi-file-earmark-excel"></i> Descargar Excel
+                        </a>
+                    </div>
 
-                <div class="tab-pane fade" id="v-pills-stats" role="tabpanel">
-            <div class="pt-3 pb-2 mb-3 border-bottom d-flex justify-content-between align-items-center">
-                <h2>Dashboard de Satisfacción</h2>
-                <a href="/api/exportar-encuestas" class="btn btn-success">
-                    <i class="bi bi-file-earmark-excel"></i> Descargar Excel
-                </a>
-            </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-4">
+                            <div class="card shadow-sm border-0 py-3">
+                                <h6 class="text-center text-muted">Servicio Reservación</h6>
+                                <div style="height: 200px;"><canvas id="chartReservas"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="card shadow-sm border-0 py-3">
+                                <h6 class="text-center text-muted">Aseo Habitaciones</h6>
+                                <div style="height: 200px;"><canvas id="chartAseo"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="card shadow-sm border-0 py-3">
+                                <h6 class="text-center text-muted">Limpieza Áreas</h6>
+                                <div style="height: 200px;"><canvas id="chartLimpieza"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="card shadow-sm border-0 py-3">
+                                <h6 class="text-center text-muted">Alimentos y Bebidas</h6>
+                                <div style="height: 200px;"><canvas id="chartAlimentos"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="card shadow-sm border-0 py-3">
+                                <h6 class="text-center text-muted">Amabilidad del personal</h6>
+                                <div style="height: 200px;"><canvas id="chartAmabilidad"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="card shadow-sm border-0 py-3">
+                                <h6 class="text-center text-muted">Opinión de la carta</h6>
+                                <div style="height: 200px;"><canvas id="chartCarta"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
 
-            <div class="row">
-                <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 py-3">
-                        <h6 class="text-center text-muted">Servicio Reservación</h6>
-                        <div style="height: 200px;"><canvas id="chartReservas"></canvas></div>
+                    <div class="card shadow-sm border-0 mt-2">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="mb-0 text-success"><i class="bi bi-chat-heart"></i> Sugerencias y Comentarios Recientes</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 400px;">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Hab.</th>
+                                            <th>Huésped</th>
+                                            <th>Sugerencia / Comentario</th>
+                                            <th>Volvería</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="listaSugerencias"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 py-3">
-                        <h6 class="text-center text-muted">Aseo Habitaciones</h6>
-                        <div style="height: 200px;"><canvas id="chartAseo"></canvas></div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 py-3">
-                        <h6 class="text-center text-muted">Limpieza Áreas</h6>
-                        <div style="height: 200px;"><canvas id="chartLimpieza"></canvas></div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 py-3">
-                        <h6 class="text-center text-muted">Alimentos y Bebidas</h6>
-                        <div style="height: 200px;"><canvas id="chartAlimentos"></canvas></div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 py-3">
-                        <h6 class="text-center text-muted">Amabilidad del personal</h6>
-                        <div style="height: 200px;"><canvas id="chartAmabilidad"></canvas></div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 py-3">
-                        <h6 class="text-center text-muted">Opinión de la carta</h6>
-                        <div style="height: 200px;"><canvas id="chartCarta"></canvas></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card shadow-sm border-0 mt-2">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 text-success"><i class="bi bi-chat-heart"></i> Sugerencias y Comentarios Recientes</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 400px;">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Hab.</th>
-                                    <th>Huésped</th>
-                                    <th>Sugerencia / Comentario</th>
-                                    <th>Volvería</th>
-                                </tr>
-                            </thead>
-                            <tbody id="listaSugerencias">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-</div>
 
             </div>
         </main>
@@ -319,22 +307,16 @@ th[onclick]:hover {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script src="/socket.io/socket.io.js"></script>
 
 <script>
-    // 1. INICIALIZACIÓN
 const socket = io();
 
 if (Notification.permission !== "granted") {
-        Notification.requestPermission();
-    }
+    Notification.requestPermission();
+}
 
 let contactoSeleccionado = "";
-
-
 
 // Permitir enviar con la tecla Enter
 document.getElementById('mensajeInput').addEventListener('keypress', (e) => {
@@ -347,27 +329,24 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (inputBuscador) {
         inputBuscador.addEventListener('keyup', function() {
-            // Convertimos lo que escribe el usuario a minúsculas para que no importen las mayúsculas
             const terminoBusqueda = this.value.toLowerCase().trim();
             const filas = document.querySelectorAll('#tablaReservas tr');
 
             filas.forEach(fila => {
-                // Obtenemos el texto de la columna Reserva (Celda 0) y de la columna Nombre (Celda 1)
                 const celdaReserva = fila.cells[0]?.innerText.toLowerCase() || '';
                 const celdaNombre = fila.cells[1]?.innerText.toLowerCase() || '';
 
-                // Si el término coincide con la reserva o con el nombre, mostramos la fila, si no, la ocultamos
                 if (celdaReserva.includes(terminoBusqueda) || celdaNombre.includes(terminoBusqueda)) {
-                    fila.style.display = ''; // Muestra la fila
+                    fila.style.display = ''; 
                 } else {
-                    fila.style.display = 'none'; // Oculta la fila
+                    fila.style.display = 'none'; 
                 }
             });
         });
     }
 });
 
-// 2. FUNCIÓN PARA CARGAR LAS RESERVAS (La que te marcaba error)
+// FUNCIÓN PARA CARGAR LAS RESERVAS
 async function cargarReservas() {
     try {
         const res = await fetch('/api/reservas');
@@ -378,20 +357,15 @@ async function cargarReservas() {
         tbody.innerHTML = '';
 
         reservas.forEach(r => {
-            // --- CORRECCIÓN DE FECHAS (Ignora la zona horaria) ---
-            // Tomamos solo la parte "YYYY-MM-DD" y la invertimos a "DD/MM/YYYY"
             const fechaLlegada = r.fllega_reh.split('T')[0].split('-').reverse().join('/');
             const fechaSalida = r.fsalid_reh.split('T')[0].split('-').reverse().join('/');
 
-            // Lógica para el botón de Bienvenida
             const btnBienvenidaClase = r.welcome_sent ? 'btn-outline-secondary disabled' : 'btn-success';
             const btnBienvenidaTexto = r.welcome_sent ? '<i class="bi bi-check2-all"></i> Enviado' : '<i class="bi bi-whatsapp"></i> Bienvenida';
             
-            // Lógica para el botón de Encuesta
             const btnEncuestaClase = r.survey_sent ? 'btn-outline-secondary disabled' : 'btn-info text-white';
             const btnEncuestaTexto = r.survey_sent ? '<i class="bi bi-check-lg"></i> Enviado' : '<i class="bi bi-star-fill"></i> Encuesta';
 
-            // Lógica para Teléfono
             const tieneTelefono = r.telef_res && r.telef_res.trim() !== '' && r.telef_res !== '000';
             const displayTelefono = tieneTelefono 
                 ? `<span>${r.telef_res}</span>` 
@@ -435,7 +409,6 @@ async function cargarReservas() {
                             ${btnEditarTel}
                         </div>
                     </td>
-
                     <td class="text-center">
                         <div class="btn-group" role="group">
                             <button class="btn btn-sm ${btnBienvenidaClase}" 
@@ -444,7 +417,6 @@ async function cargarReservas() {
                                     title="${!tieneTelefono ? 'Falta el teléfono' : 'Enviar saludo inicial'}">
                                 ${btnBienvenidaTexto}
                             </button>
-                            
                             <button class="btn btn-sm ${btnEncuestaClase}" 
                                     onclick="${r.survey_sent || !tieneTelefono ? '' : `enviarEncuesta('${r.nreser_res}', '${r.telef_res}', '${r.nombre_res}')`}"
                                     ${!tieneTelefono ? 'disabled' : ''}
@@ -457,7 +429,6 @@ async function cargarReservas() {
             `;
         });
 
-        // 🔥 TRUCO CLAVE: Si la tabla ya estaba ordenada por el usuario, re-aplicamos el orden de inmediato
         aplicarOrdenamientoVisual();
 
     } catch (err) {
@@ -465,77 +436,64 @@ async function cargarReservas() {
     }
 }
 
-
-// 2. Aquí pegas el evento del formulario manual2:
-    document.getElementById('formManual').onsubmit = async (e) => {
-        e.preventDefault(); // Evita que la página se recargue
-        
-        const datos = {
-            nombre: document.getElementById('m_nombre').value,
-            telefono: document.getElementById('m_telefono').value,
-            llegada: document.getElementById('m_llegada').value,
-            salida: document.getElementById('m_salida').value
-        };
-
-        try {
-            const res = await fetch('/api/reservas/manual', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datos)
-            });
-
-
-            if (res.ok) {
-                alert("✅ Huésped registrado con éxito");
-                
-                // 1. Intentar el cierre limpio con Bootstrap
-                const modalElement = document.getElementById('modalManual');
-                const modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) {
-                    modal.hide();
-                } else {
-                    // Si Bootstrap no responde, lo ocultamos manualmente
-                    modalElement.classList.remove('show');
-                    modalElement.style.display = 'none';
-                }
-                
-                // 2. 🛠️ TRUCO MAESTRO: Forzar la eliminación de la cortina oscura residual
-                const cortinaGris = document.querySelector('.modal-backdrop');
-                if (cortinaGris) {
-                    cortinaGris.remove(); // La borramos por completo del mapa HTML
-                }
-                
-                // 3. Devolver el scroll natural y remover bloqueos en el cuerpo de la página
-                document.body.classList.remove('modal-open');
-                document.body.style.overflow = '';
-                document.body.style.paddingRight = '';
-
-                // 4. Limpiar el formulario y recargar tu tabla en vivo
-                document.getElementById('formManual').reset();
-                cargarReservas(); 
-            }
-             else {
-                alert("❌ Error al guardar en la base de datos");
-            }
-        } catch (err) {
-            console.error("Error:", err);
-            alert("❌ No se pudo conectar con el servidor");
-        }
+// SUBMIT FORMULARIO WALK-IN
+document.getElementById('formManual').onsubmit = async (e) => {
+    e.preventDefault();
+    
+    const datos = {
+        nombre: document.getElementById('m_nombre').value,
+        telefono: document.getElementById('m_telefono').value,
+        llegada: document.getElementById('m_llegada').value,
+        salida: document.getElementById('m_salida').value
     };
 
+    try {
+        const res = await fetch('/api/reservas/manual', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datos)
+        });
+
+        if (res.ok) {
+            alert("✅ Huésped registrado con éxito");
+            
+            const modalElement = document.getElementById('modalManual');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            } else {
+                modalElement.classList.remove('show');
+                modalElement.style.display = 'none';
+            }
+            
+            const cortinaGris = document.querySelector('.modal-backdrop');
+            if (cortinaGris) {
+                cortinaGris.remove(); 
+            }
+            
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+
+            document.getElementById('formManual').reset();
+            cargarReservas(); 
+        } else {
+            alert("❌ Error al guardar en la base de datos");
+        }
+    } catch (err) {
+        console.error("Error:", err);
+        alert("❌ No se pudo conectar con el servidor");
+    }
+};
 
 async function solicitarNuevaFechaSalida(id, fechaActual) {
-    // Pedimos la fecha usando un prompt. Para mejorar la interfaz en el futuro, podrías usar un modal con un input tipo date.
     const nuevaFecha = prompt("Introduce la nueva fecha de salida (Formato: AAAA-MM-DD):", fechaActual);
-    
-    if (nuevaFecha === null) return; // Si cancela el prompt, salimos
-    
+    if (nuevaFecha === null) return;
     if (nuevaFecha.trim() === '') {
         alert("La fecha de salida no puede estar vacía.");
         return;
     }
 
-    // Opcional: Validación básica de formato AAAA-MM-DD
     const regexFecha = /^\d{4}-\d{2}-\d{2}$/;
     if (!regexFecha.test(nuevaFecha)) {
         alert("Formato incorrecto. Por favor usa el formato AAAA-MM-DD (Ejemplo: 2026-06-30)");
@@ -551,25 +509,20 @@ async function solicitarNuevaFechaSalida(id, fechaActual) {
 
         if (response.ok) {
             alert("Fecha de salida actualizada con éxito");
-            cargarReservas(); // Volvemos a renderizar la tabla con los datos nuevos
+            cargarReservas();
         } else {
             const errorData = await response.json();
             alert(`Error al actualizar: ${errorData.message || 'Error desconocido'}`);
         }
     } catch (err) {
         console.error("Error al actualizar la fecha de salida:", err);
-        alert("Ocurrió un error de red al intentar actualizar la fecha.");
     }
 }    
 
 async function solicitarNuevoNombre(id, nombreActual) {
-    // 1. Abrimos el cuadro de diálogo
     const nuevoNom = prompt("Ingrese el nombre real del huésped:", nombreActual);
-    
-    // 2. Validamos (que no sea nulo, ni vacío, ni igual al anterior)
     if (nuevoNom !== null && nuevoNom.trim() !== "" && nuevoNom !== nombreActual) {
         try {
-            // 3. Enviamos la actualización al Backend (reservas.js)
             const respuesta = await fetch(`/api/reservas/${id}/nombre`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -578,25 +531,20 @@ async function solicitarNuevoNombre(id, nombreActual) {
 
             if (respuesta.ok) {
                 alert("✅ Nombre actualizado con éxito.");
-                // 4. Refrescamos la tabla para mostrar el cambio
                 cargarReservas(); 
             } else {
                 alert("❌ No se pudo actualizar el nombre.");
             }
         } catch (error) {
             console.error("Error:", error);
-            alert("❌ Error de conexión al servidor.");
         }
     }
 }
 
-// Esta función abre la ventana emergente y envía el dato al servidor
 async function solicitarNuevoTel(id, telActual) {
     const nuevoTel = prompt("Ingrese el número de teléfono corregido (ej: 57311...):", telActual);
-    
     if (nuevoTel !== null && nuevoTel !== telActual) {
         try {
-            // CAMBIO AQUÍ: La ruta ahora es /api/reservas (coincide con tu router)
             const respuesta = await fetch(`/api/reservas/${id}/telefono`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -611,12 +559,10 @@ async function solicitarNuevoTel(id, telActual) {
             }
         } catch (error) {
             console.error("Error:", error);
-            alert("❌ Error de conexión.");
         }
     }
 }
 
-// 3. FUNCIÓN PARA CARGAR LOS CONTACTOS DEL CHAT (Ordenados por fecha)
 async function cargarContactos() {
     try {
         const res = await fetch('/contactos');
@@ -628,15 +574,11 @@ async function cargarContactos() {
         
         contactos.forEach(c => {
             const item = document.createElement('div');
-            
-            // --- CAMBIO 1: Clase dinámica ---
-            // Si tiene mensajes sin leer, le ponemos un fondo muy sutil (bg-light) y negrita (fw-bold)
             const tienePendientes = c.sin_leer > 0;
             const claseUnread = tienePendientes ? 'bg-light unread-chat' : '';
             
             item.className = `list-group-item list-group-item-action contact-item p-3 border-0 border-bottom ${claseUnread}`;
             
-            // --- LÓGICA DE FECHA (Mantenemos la tuya) ---
             let fechaMostrar = '';
             if (c.ultima_fecha) {
                 const fechaMsg = new Date(c.ultima_fecha);
@@ -654,7 +596,6 @@ async function cargarContactos() {
                 }
             }
 
-            // --- CAMBIO 2: HTML con Indicador ---
             item.innerHTML = `
                 <div class="d-flex align-items-center justify-content-between w-100">
                     <div class="d-flex align-items-center">
@@ -677,19 +618,14 @@ async function cargarContactos() {
                 </div>
             `;
 
-            // --- CAMBIO 3: Marcar como leído al hacer clic ---
             item.onclick = async () => {
                 contactoSeleccionado = c.telefono;
-                
-                // Si el chat tenía mensajes sin leer, avisamos al servidor para que los limpie
                 if (tienePendientes) {
                     try {
                         await fetch(`/api/leer-mensajes/${c.telefono}`, { method: 'POST' });
-                        // Refrescamos la lista para que el punto rojo desaparezca inmediatamente
                         cargarContactos(); 
                     } catch (e) { console.error("Error al marcar como leído"); }
                 }
-
                 cargarChat(c.telefono);
                 document.querySelectorAll('.contact-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
@@ -702,7 +638,14 @@ async function cargarContactos() {
     }
 }
 
-// 4. FUNCIÓN PARA CARGAR EL HISTORIAL DE UN CHAT
+function formatearHora(fechaISO) {
+    if (!fechaISO) return '';
+    const date = new Date(fechaISO);
+    const horas = String(date.getHours()).padStart(2, '0');
+    const minutos = String(date.getMinutes()).padStart(2, '0');
+    return `${horas}:${minutos}`;
+}
+
 async function cargarChat(telefono) {
     const res = await fetch('/historial');
     const todos = await res.json();
@@ -714,14 +657,21 @@ async function cargarChat(telefono) {
     filtrados.forEach(m => {
         const div = document.createElement('div');
         const clase = m.direction === 'incoming' ? 'incoming' : 'outgoing';
-        div.className = `message shadow-sm ${clase}`;
-        div.innerText = m.body;
+        div.className = `message shadow-sm ${clase} position-relative`;
+        
+        const horaLimpia = formatearHora(m.created_at);
+
+        div.innerHTML = `
+            <div class="pe-4" style="word-break: break-word;">${m.body}</div>
+            <span class="text-muted position-absolute" style="font-size: 0.65rem; bottom: 3px; right: 9px; opacity: 0.7;">
+                ${horaLimpia}
+            </span>
+        `;
         area.appendChild(div);
     });
     area.scrollTop = area.scrollHeight;
 }
 
-// 5. LÓGICA DE SUBIDA DE EXCEL
 const uploadForm = document.getElementById('uploadForm');
 if(uploadForm) {
     uploadForm.onsubmit = async (e) => {
@@ -739,9 +689,7 @@ if(uploadForm) {
     };
 }
 
-// 6. RECIBIR MENSAJES EN TIEMPO REAL (SOCKET)
 socket.on('mensaje_nuevo', (datos) => {
-    // 1. Verificamos si el mensaje pertenece al chat que tenemos abierto en pantalla
     const esMismoChat = (datos.telefono === contactoSeleccionado || datos.de === contactoSeleccionado);
     const esMensajePropio = (datos.direccion === 'saliente');
 
@@ -749,24 +697,18 @@ socket.on('mensaje_nuevo', (datos) => {
         renderizarMensaje(datos);
     }
     
-    // 2. Siempre refrescamos la lista de contactos
     cargarContactos();
 
-    // --- NUEVA LÓGICA DE NOTIFICACIÓN ---
-    // Solo notificamos si el mensaje es ENTRANTE
     if (datos.direccion === 'entrante') {
-        // 1. Sonido de WhatsApp
         const audio = new Audio('https://raw.githubusercontent.com/Anshul-99/WhatsApp-Clone-React/master/src/assets/whatsapp_notification.mp3');
         audio.play().catch(e => console.log("Permiso de audio requerido"));
 
-        // 2. Notificación
         if (Notification.permission === "granted") {
             const noti = new Notification("🏨 Mensaje Nuevo", {
                 body: `${datos.de || datos.telefono}: ${datos.texto || datos.body}`,
                 icon: "https://cdn-icons-png.flaticon.com/512/1041/1041916.png",
                 tag: "chat-hotel"
             });
-
             noti.onclick = () => {
                 window.focus();
                 noti.close();
@@ -777,16 +719,11 @@ socket.on('mensaje_nuevo', (datos) => {
 
 function renderizarMensaje(datos) {
     const area = document.getElementById('mensajes');
-    
-    // Si es el primer mensaje, limpiamos el texto de "Selecciona un chat"
     if (area.querySelector('.bi-whatsapp')) {
         area.innerHTML = '';
     }
 
     const div = document.createElement('div');
-    
-    // Determinamos si es entrante o saliente para el estilo
-    // 'datos.direccion' viene del webhook, 'datos.direction' viene de la DB
     const direccion = datos.direccion || datos.direction;
     const clase = direccion === 'incoming' || direccion === 'entrante' ? 'incoming' : 'outgoing';
     
@@ -794,101 +731,39 @@ function renderizarMensaje(datos) {
     div.innerText = datos.texto || datos.body;
     
     area.appendChild(div);
-
-    // Auto-scroll hacia abajo para ver el mensaje nuevo
     area.scrollTop = area.scrollHeight;
 }
 
-
-// --- AUXILIAR: FORMATEAR HORA ---
-function formatearHora(fechaISO) {
-    if (!fechaISO) return '';
-    const date = new Date(fechaISO);
-    const horas = String(date.getHours()).padStart(2, '0');
-    const minutos = String(date.getMinutes()).padStart(2, '0');
-    return `${horas}:${minutos}`;
-}
-
-// 4. FUNCIÓN PARA CARGAR EL HISTORIAL DE UN CHAT (MODIFICADA CON HORA)
-async function cargarChat(telefono) {
-    const res = await fetch('/historial');
-    const todos = await res.json();
-    const area = document.getElementById('mensajes');
-    
-    const filtrados = todos.filter(m => m.telefono === telefono);
-    
-    area.innerHTML = ''; 
-    filtrados.forEach(m => {
-        const div = document.createElement('div');
-        const clase = m.direction === 'incoming' ? 'incoming' : 'outgoing';
-        
-        // Mantenemos tus clases originales y agregamos 'position-relative' para acomodar la hora
-        div.className = `message shadow-sm ${clase} position-relative`;
-        
-        // Extraemos la hora usando la columna 'created_at' que vimos en el backend
-        const horaLimpia = formatearHora(m.created_at);
-
-        // Usamos innerHTML en lugar de innerText para poder meter el texto del mensaje Y la hora abajo en su esquina
-        div.innerHTML = `
-            <div class="pe-4" style="word-break: break-word;">${m.body}</div>
-            <span class="text-muted position-absolute" style="font-size: 0.65rem; bottom: 3px; right: 9px; opacity: 0.7;">
-                ${horaLimpia}
-            </span>
-        `;
-        
-        area.appendChild(div);
-    });
-    area.scrollTop = area.scrollHeight;
-}
-
-
-    // 7. ENVIAR BIENVENIDA
 async function enviarBienvenida(idReserva, telefono, nombre) {
-    // 1. Confirmación para evitar envíos accidentales
     if (!confirm(`¿Deseas enviar la bienvenida oficial a ${nombre}?`)) return;
-
     try {
-        // 2. Llamada real al servidor
         const res = await fetch('/api/reservas/enviar-bienvenida', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                nreser_res: idReserva, 
-                telefono: telefono, 
-                nombre: nombre 
-            })
+            body: JSON.stringify({ nreser_res: idReserva, telefono: telefono, nombre: nombre })
         });
-
         const data = await res.json();
-        
         if (data.success) {
             alert("🚀 ¡Mensaje enviado con éxito a WhatsApp!");
-            cargarReservas(); // Esto refrescará la tabla y pondrá el botón en "Enviado"
+            cargarReservas();
         } else {
-            alert("❌ Error del servidor: " + (data.error || "No se pudo enviar"));
+            alert("❌ Error: " + (data.error || "No se pudo enviar"));
         }
     } catch (err) {
         console.error("Error en la petición:", err);
-        alert("❌ Error de conexión: Asegúrate de que el servidor esté corriendo.");
     }
 }
 
-
 async function verificarNotificacionesGlobales() {
     try {
-        const response = await fetch('/api/reservas/notificaciones/pendientes'); // Ajusta la ruta base según tu app
+        const response = await fetch('/api/reservas/notificaciones/pendientes');
         const data = await response.json();
-        
         const indicador = document.getElementById('alerta-global-chat');
         if (!indicador) return;
 
         if (data.hayPendientes) {
-            // Si hay al menos un mensaje sin leer, REMOVEMOS 'd-none' (clase Bootstrap para ocultar)
             indicador.classList.remove('d-none');
-            // Opcional: Si quieres que muestre el número exacto de mensajes:
-            // indicador.innerHTML = `<i class="bi bi-circle-fill"></i> ${data.conteo}`;
         } else {
-            // Si todo está leído, la volvemos a ocultar
             indicador.classList.add('d-none');
         }
     } catch (err) {
@@ -896,87 +771,54 @@ async function verificarNotificacionesGlobales() {
     }
 }
 
-// 1. Ejecutar de inmediato al cargar la pantalla
 verificarNotificacionesGlobales();
-
-// 2. Revisar automáticamente cada 5 segundos para que la señal cambie sola
 setInterval(verificarNotificacionesGlobales, 5000);
 
 async function enviarEncuesta(idReserva, telefono, nombre) {
-    // Confirmación visual
     if (!confirm(`¿Enviar encuesta de satisfacción a ${nombre}?`)) return;
-
     try {
         const res = await fetch('/api/reservas/enviar-encuesta', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                nreser_res: idReserva, 
-                telefono: telefono, 
-                nombre: nombre 
-            })
+            body: JSON.stringify({ nreser_res: idReserva, telefono: telefono, nombre: nombre })
         });
-
         const data = await res.json();
-        
         if (data.success) {
             alert("📊 ¡Encuesta enviada con éxito!");
-            cargarReservas(); // <-- Agrega esta línea para refrescar la tabla
+            cargarReservas();
         } else {
             alert("❌ Error: " + (data.error || "No se pudo enviar la encuesta"));
         }
     } catch (err) {
         console.error("Error en la petición:", err);
-        alert("❌ Error de conexión con el servidor");
     }
 }
 
-
-// 8. DISPARADOR INICIAL
 window.onload = () => {
     cargarReservas();
     cargarContactos();
 };
 
-
 async function enviarMensaje() {
     const input = document.getElementById('mensajeInput');
     const texto = input.value.trim();
 
-    // Validamos que haya un contacto seleccionado y que el mensaje no esté vacío
     if (!contactoSeleccionado) {
         alert("Por favor, selecciona un chat de la lista izquierda primero.");
         return;
     }
     if (!texto) return;
 
-    // 1. Enviamos el mensaje al servidor a través de Socket.io
-    socket.emit('enviar_a_whatsapp', {
-        a: contactoSeleccionado,
-        texto: texto
-    });
-
-    // 2. Limpiamos el cuadro de texto
+    socket.emit('enviar_a_whatsapp', { a: contactoSeleccionado, texto: texto });
     input.value = '';
-    
-    // Opcional: Podrías agregar el mensaje visualmente aquí mismo o esperar a que el socket responda
 }
 
-// EXTRA: Para que también envíe el mensaje al presionar la tecla ENTER
-document.getElementById('mensajeInput').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        enviarMensaje();
-    }
-});
-
-let charts = {}; // Para guardar las instancias y poder destruirlas al actualizar
-
+let charts = {};
 async function cargarDashboard() {
     try {
         const res = await fetch('/api/stats-encuestas');
         const datos = await res.json();
         
-        // Función para procesar datos y crear gráficos
         const renderChart = (id, columna, label) => {
             const counts = {};
             datos.forEach(d => {
@@ -984,7 +826,7 @@ async function cargarDashboard() {
                 counts[val] = (counts[val] || 0) + 1;
             });
 
-            if (charts[id]) charts[id].destroy(); // Limpiar si ya existe
+            if (charts[id]) charts[id].destroy();
             
             charts[id] = new Chart(document.getElementById(id), {
                 type: 'doughnut',
@@ -992,7 +834,7 @@ async function cargarDashboard() {
                     labels: Object.keys(counts),
                     datasets: [{
                         data: Object.values(counts),
-                        backgroundColor: ['#198754', '#ffc107', '#fd7e14', '#dc3545'], // Verde, Ambar, Naranja, Rojo
+                        backgroundColor: ['#198754', '#ffc107', '#fd7e14', '#dc3545'],
                         hoverOffset: 4
                     }]
                 },
@@ -1006,9 +848,7 @@ async function cargarDashboard() {
         renderChart('chartAlimentos', 'alimentos_bebidas');
         renderChart('chartAmabilidad', 'amabilidad_personal');
         renderChart('chartCarta', 'carta_opinion');
-           
 
-        // Llenar la tabla de sugerencias
         const tbody = document.getElementById('listaSugerencias');
         tbody.innerHTML = datos.map(d => `
             <tr>
@@ -1018,54 +858,40 @@ async function cargarDashboard() {
                 <td><span class="badge ${d.volveria_hospedarse === 'Si' ? 'bg-success' : 'bg-danger'}">${d.volveria_hospedarse}</span></td>
             </tr>
         `).join('');
-
     } catch (err) {
         console.error("Error cargando dashboard:", err);
     }
 }
 
-// Variables globales para el control del orden de la tabla
 let ordenAscendente = true;
-let columnaActualOrdenada = null; // Al principio la tabla no está ordenada por ninguna columna manualmente
+let columnaActualOrdenada = null;
 
 function ordenarTablaPorFecha(columna) {
-    // Cambiamos la dirección del orden únicamente si el usuario hizo clic en el encabezado explícitamente
     ordenAscendente = !ordenAscendente;
-    columnaActualOrdenada = columna; // Guardamos qué columna se ordenó
-
+    columnaActualOrdenada = columna;
     aplicarOrdenamientoVisual();
 }
 
-// Nueva función auxiliar que realiza el ordenamiento físico de las filas en el navegador
 function aplicarOrdenamientoVisual() {
-    if (!columnaActualOrdenada) return; // Si no se ha ordenado por ninguna columna, no hacemos nada
-
+    if (!columnaActualOrdenada) return;
     const tbody = document.getElementById('tablaReservas');
     const filas = Array.from(tbody.querySelectorAll('tr'));
 
     filas.sort((a, b) => {
-        // Llegada es índice 2, Salida es índice 3
         const indice = (columnaActualOrdenada === 'fllega_reh') ? 2 : 3;
-        
         const fechaA = reconstruirFecha(a.cells[indice].innerText);
         const fechaB = reconstruirFecha(b.cells[indice].innerText);
-
         return ordenAscendente ? fechaA - fechaB : fechaB - fechaA;
     });
 
-    // Reinsertamos las filas manteniendo el orden
     tbody.innerHTML = '';
     filas.forEach(fila => tbody.appendChild(fila));
 }
 
-// Función auxiliar para convertir "5/6/2026" en un objeto Date real
 function reconstruirFecha(fechaStr) {
     const [dia, mes, anio] = fechaStr.split('/').map(Number);
     return new Date(anio, mes - 1, dia);
 }
-
-
 </script>
-
 </body>
 </html>

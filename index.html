@@ -147,20 +147,27 @@ th[onclick]:hover {
                 <div class="card-body bg-light py-2 px-3">
                     <form id="uploadForm" class="row g-2 align-items-center">
                         
-                        <div class="col-md-5 d-flex align-items-center">
+                        <div class="col-md-4 d-flex align-items-center">
                             <span class="fw-bold text-secondary me-2 text-nowrap" style="font-size: 0.9rem;">Subir Zeus:</span>
                             <input type="file" id="excelFile" class="form-control form-control-sm" accept=".xlsx, .xls">
                         </div>
                         
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <button type="submit" class="btn btn-primary btn-sm w-100">
                                 <i class="bi bi-cloud-arrow-up-fill"></i> Cargar Excel
                             </button>
                         </div>
                         
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" id="buscadorTabla" class="form-control" placeholder="Buscar por nombre o reserva...">
+                            </div>
+                        </div>
+
                         <div class="col-md-1 text-center d-none d-md-block text-muted">|</div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <button type="button" class="btn btn-success btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalManual">
                                 <i class="bi bi-person-plus-fill"></i> Registrar Walk-in
                             </button>
@@ -331,6 +338,32 @@ let contactoSeleccionado = "";
 // Permitir enviar con la tecla Enter
 document.getElementById('mensajeInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') enviarMensaje();
+});
+
+// --- FUNCIONALIDAD: BUSCADOR EN TIEMPO REAL ---
+document.addEventListener('DOMContentLoaded', () => {
+    const inputBuscador = document.getElementById('buscadorTabla');
+    
+    if (inputBuscador) {
+        inputBuscador.addEventListener('keyup', function() {
+            // Convertimos lo que escribe el usuario a minúsculas para que no importen las mayúsculas
+            const terminoBusqueda = this.value.toLowerCase().trim();
+            const filas = document.querySelectorAll('#tablaReservas tr');
+
+            filas.forEach(fila => {
+                // Obtenemos el texto de la columna Reserva (Celda 0) y de la columna Nombre (Celda 1)
+                const celdaReserva = fila.cells[0]?.innerText.toLowerCase() || '';
+                const celdaNombre = fila.cells[1]?.innerText.toLowerCase() || '';
+
+                // Si el término coincide con la reserva o con el nombre, mostramos la fila, si no, la ocultamos
+                if (celdaReserva.includes(terminoBusqueda) || celdaNombre.includes(terminoBusqueda)) {
+                    fila.style.display = ''; // Muestra la fila
+                } else {
+                    fila.style.display = 'none'; // Oculta la fila
+                }
+            });
+        });
+    }
 });
 
 // 2. FUNCIÓN PARA CARGAR LAS RESERVAS (La que te marcaba error)

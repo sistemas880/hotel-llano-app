@@ -63,7 +63,21 @@ th[onclick]:hover {
     color: #198754 !important; /* Resalta con tu verde esmeralda */
 }
 
-    </style>
+/* Altura fija con scroll para la tabla de gestión de reservas */
+.tabla-reservas-scroll {
+    max-height: 60vh; /* Ocupará el 60% de la pantalla antes de activar el scroll */
+    overflow-y: auto;  /* Activa la barra vertical sólo si es necesario */
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Mantiene los encabezados oscuros fijos arriba mientras bajas en la lista */
+.tabla-reservas-scroll table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+</style>
 </head>
 <body>
 
@@ -151,7 +165,7 @@ th[onclick]:hover {
                     </div>
 
                     <div class="card shadow-sm">
-                        <div class="table-responsive">
+                        <div class="table-responsive tabla-reservas-scroll">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-dark">
                                     <tr>
@@ -427,7 +441,7 @@ async function cargarReservas() {
                 body: JSON.stringify(datos)
             });
 
-            
+
             if (res.ok) {
                 alert("✅ Huésped registrado con éxito");
                 

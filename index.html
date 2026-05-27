@@ -456,6 +456,9 @@ async function cargarReservas() {
             `;
         });
 
+        // 🔥 TRUCO CLAVE: Si la tabla ya estaba ordenada por el usuario, re-aplicamos el orden de inmediato
+        aplicarOrdenamientoVisual();
+
     } catch (err) {
         console.error("Error cargando reservas:", err);
     }
@@ -1020,30 +1023,36 @@ async function cargarDashboard() {
     }
 }
 
-// Variable global para rastrear el estado del orden
+// Variables globales para el control del orden de la tabla
 let ordenAscendente = true;
+let columnaActualOrdenada = null; // Al principio la tabla no está ordenada por ninguna columna manualmente
 
 function ordenarTablaPorFecha(columna) {
+    // Cambiamos la dirección del orden únicamente si el usuario hizo clic en el encabezado explícitamente
+    ordenAscendente = !ordenAscendente;
+    columnaActualOrdenada = columna; // Guardamos qué columna se ordenó
+
+    aplicarOrdenamientoVisual();
+}
+
+// Nueva función auxiliar que realiza el ordenamiento físico de las filas en el navegador
+function aplicarOrdenamientoVisual() {
+    if (!columnaActualOrdenada) return; // Si no se ha ordenado por ninguna columna, no hacemos nada
+
     const tbody = document.getElementById('tablaReservas');
-    // Convertimos las filas de la tabla en un Array para poder ordenarlas
     const filas = Array.from(tbody.querySelectorAll('tr'));
 
-    // Cambiamos la dirección del orden
-    ordenAscendente = !ordenAscendente;
-
     filas.sort((a, b) => {
-        // Extraemos las fechas de las celdas (ajusta el índice si cambiaste el orden de las columnas)
         // Llegada es índice 2, Salida es índice 3
-        const indice = (columna === 'fllega_reh') ? 2 : 3;
+        const indice = (columnaActualOrdenada === 'fllega_reh') ? 2 : 3;
         
-        // Convertimos el texto de la celda (DD/MM/AAAA) a un objeto Date comparable
         const fechaA = reconstruirFecha(a.cells[indice].innerText);
         const fechaB = reconstruirFecha(b.cells[indice].innerText);
 
         return ordenAscendente ? fechaA - fechaB : fechaB - fechaA;
     });
 
-    // Limpiamos la tabla y reinsertamos las filas ordenadas
+    // Reinsertamos las filas manteniendo el orden
     tbody.innerHTML = '';
     filas.forEach(fila => tbody.appendChild(fila));
 }

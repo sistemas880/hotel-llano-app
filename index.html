@@ -427,17 +427,37 @@ async function cargarReservas() {
                 body: JSON.stringify(datos)
             });
 
+            
             if (res.ok) {
                 alert("✅ Huésped registrado con éxito");
                 
-                // Cerrar el modal automáticamente
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalManual'));
-                modal.hide();
+                // 1. Intentar el cierre limpio con Bootstrap
+                const modalElement = document.getElementById('modalManual');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                } else {
+                    // Si Bootstrap no responde, lo ocultamos manualmente
+                    modalElement.classList.remove('show');
+                    modalElement.style.display = 'none';
+                }
                 
-                // Limpiar el formulario y recargar la tabla
+                // 2. 🛠️ TRUCO MAESTRO: Forzar la eliminación de la cortina oscura residual
+                const cortinaGris = document.querySelector('.modal-backdrop');
+                if (cortinaGris) {
+                    cortinaGris.remove(); // La borramos por completo del mapa HTML
+                }
+                
+                // 3. Devolver el scroll natural y remover bloqueos en el cuerpo de la página
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+
+                // 4. Limpiar el formulario y recargar tu tabla en vivo
                 document.getElementById('formManual').reset();
                 cargarReservas(); 
-            } else {
+            }
+             else {
                 alert("❌ Error al guardar en la base de datos");
             }
         } catch (err) {

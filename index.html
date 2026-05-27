@@ -63,14 +63,19 @@ th[onclick]:hover {
     color: #198754 !important; /* Resalta con tu verde esmeralda */
 }
 
-/* Altura fija con scroll para la tabla de gestión de reservas */
+/* Altura dinámica inteligente para la tabla */
 .tabla-reservas-scroll {
-    max-height: 75vh; /* Ocupará el 60% de la pantalla antes de activar el scroll */
-    overflow-y: auto;  /* Activa la barra vertical sólo si es necesario */
-    border-bottom: 1px solid #dee2e6;
+    /* Si hay muchos registros, se detiene a los 72vh y activa el scroll */
+    max-height: 72vh; 
+    /* Si hay pocos registros, la tabla se estira como mínimo a 50vh para rellenar el área y no dejar huecos */
+    min-height: 50vh; 
+    overflow-y: auto;  
+    background-color: #ffffff; /* Asegura que el fondo de la caja siempre sea blanco limpio */
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
 }
 
-/* Mantiene los encabezados oscuros fijos arriba mientras bajas en la lista */
+/* El encabezado se mantiene congelado arriba */
 .tabla-reservas-scroll table thead {
     position: sticky;
     top: 0;
@@ -168,14 +173,16 @@ th[onclick]:hover {
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <span class="input-group-text bg-white text-muted shadow-sm border-end-0">
-                                <i class="bi bi-search text-success"></i>
-                            </span>
-                            <input type="text" id="buscadorTabla" class="form-control shadow-sm border-start-0 py-2" placeholder="Buscar por nombre de huésped o número de reserva en tiempo real...">
+                   <div class="row mb-2">
+                        <div class="col-md-6 mx-auto">
+                            <div class="input-group input-group-sm shadow-sm">
+                                <span class="input-group-text bg-white text-muted border-end-0">
+                                    <i class="bi bi-search text-success"></i>
+                                </span>
+                                <input type="text" id="buscadorTabla" class="form-control border-start-0 py-1.5" placeholder="Buscar por nombre o reserva...">
+                            </div>
                         </div>
-                    </div>    
+                    </div> 
                 </div>
 
                     <div class="card shadow-sm">

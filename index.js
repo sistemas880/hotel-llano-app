@@ -235,27 +235,50 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
-// 5. EVENTOS DE SOCKET.IO
-io.on('connection', (socket) => {
-    console.log('👤 Recepcionista conectado a la interfaz web');
 
+// ==========================================================================
+// 🌐 CONFIGURACIÓN DE SOCKET.IO (COMUNICACIÓN EN TIEMPO REAL)
+// ==========================================================================
+io.on('connection', (socket) => {
+    console.log(`🔌 Recepción conectada al panel (ID: ${socket.id})`);
+
+    // Escuchar respuestas de la recepción y enviarlas a WhatsApp
     socket.on('enviar_a_whatsapp', async (data) => {
         try {
-            // USAMOS EL SERVICIO MODULAR PARA ENVIAR
-            await whatsappService.enviarTexto(data.a, data.texto);
+            console.log(`📩 Mensaje saliente detectado hacia: ${data.a}`);
+            console.log(`💬 Contenido: "${data.texto}"`);
 
-            // GUARDAMOS EN LA DB
+            // 1. Enviar el mensaje físico al celular del huésped usando tu servicio de WhatsApp
+            // Nota: Cambié a 'enviarMensaje' que es el estándar de Meta para texto libre.
+            await whatsappService.enviarMensaje(data.a, data.texto);
+
+            // 2. Guardar el mensaje en el historial de la base de datos local
             await pool.query(
-                'INSERT INTO messages (direction, body, telefono) VALUES ($1, $2, $3)', 
+                'INSERT INTO chat_historial (direction, body, telefono) VALUES ($1, $2, $3)',
                 ['outgoing', data.texto, data.a]
             );
 
-            // Emitir de vuelta para mostrarlo en pantalla
-            io.emit('mensaje_nuevo', { direccion: 'saliente', texto: data.texto });
-            console.log("🚀 Mensaje enviado y guardado");
+            // 3. Emitir el mensaje a todas las pantallas de recepción abiertas en tiempo real
+            // Incluimos 'telefono' y 'direction' para que 'app.js' sepa en qué chat pintarlo.
+            io.emit('mensaje_nuevo', { 
+                direccion: 'saliente', 
+                direction: 'outgoing', // Doble compatibilidad por si acaso
+                texto: data.texto,
+                body: data.texto,
+                telefono: data.a
+            });
+
+            console.log("🚀 ¡Mensaje enviado a Meta y guardado en historial con éxito!");
+
         } catch (error) {
-            console.error("❌ Error en el proceso de envío:", error.message);
+            console.error("❌ Error crítico en el proceso de envío a WhatsApp:", error.message);
+            // Opcional: Notificar al frontend que el mensaje falló
+            socket.emit('error_envio', { mensaje: "No se pudo entregar el mensaje a WhatsApp." });
         }
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`❌ Conexión cerrada con el panel (ID: ${socket.id})`);
     });
 });
 

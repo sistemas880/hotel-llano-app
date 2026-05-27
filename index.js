@@ -7,7 +7,7 @@ const { Server } = require('socket.io');
 const pool = require('./config/db');
 
 const whatsappService = require('./services/whatsappService');
-const reservasRoutes = require('./routes/reservas'); // <-- Nueva línea
+const reservasRoutes = require('./routes/reservas'); 
 
 // 2. CONFIGURACIONES
 const app = express();
@@ -15,10 +15,8 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
-
 app.use(express.static('public'));
-
-app.use('/api/reservas', reservasRoutes); // <-- Nueva línea
+app.use('/api/reservas', reservasRoutes); 
 
 const VERIFY_TOKEN = "ALGO_SEGURO_123";
 
@@ -37,7 +35,6 @@ app.get('/webhook', (req, res) => {
         res.sendStatus(403);
     }
 });
-
 
 // HISTORIAL: Obtener mensajes de la DB
 app.get('/historial', async (req, res) => {
@@ -93,9 +90,7 @@ app.post('/webhook', async (req, res) => {
         if (message) {
             const telefono = message.from;
 
-                        // --- LÓGICA PARA DETECTAR RESPUESTA DE ENCUESTA (FLOWS) ---
-                    // Dentro de app.post('/webhook'...)
-            // Dentro de app.post('/webhook'...) en la parte de nfm_reply
+            // --- LÓGICA PARA DETECTAR RESPUESTA DE ENCUESTA (FLOWS) ---
             if (message.type === 'interactive' && message.interactive?.type === 'nfm_reply') {
                 try {
                     const response = JSON.parse(message.interactive.nfm_reply.response_json);
@@ -103,10 +98,8 @@ app.post('/webhook', async (req, res) => {
 
                     console.log(`📊 Limpiando y guardando encuesta de: ${de}`);
 
-                    // Función interna para quitar el "0_", "1_", etc.
                     const limpiarRespuesta = (valor) => {
                         if (!valor) return "No responde";
-                        // Si tiene un guion bajo, toma lo que está después del primero
                         return valor.includes('_') ? valor.split('_')[1] : valor;
                     };
 
@@ -128,10 +121,10 @@ app.post('/webhook', async (req, res) => {
                         limpiarRespuesta(response.screen_0_Limpieza_de_reas_comunes_5),
                         limpiarRespuesta(response.screen_0_Servicio_alimentos_y_bebidas_6),
                         limpiarRespuesta(response.screen_1_Nuestra_carta_es_opcional_0),
-                        response.screen_1_Carta_opcional_1, // Este es TextArea, no necesita split
+                        response.screen_1_Carta_opcional_1, 
                         limpiarRespuesta(response.screen_1_Amabilidad_del_personal_2),
                         limpiarRespuesta(response.screen_1_Volvera_a_hospedarse_3),
-                        response.screen_1_Sugerencias_4    // Este es TextArea
+                        response.screen_1_Sugerencias_4 
                     ];
 
                     await pool.query(query, values);
@@ -144,14 +137,14 @@ app.post('/webhook', async (req, res) => {
                 }
             }
             
-            // --- LÓGICA NORMAL DE MENSAJES DE TEXTO ---
+            // --- LÓGICA NORMAL DE MENSAJES DE TEXTO ENTRANTE ---
             else if (message.text) {
                 const texto = message.text.body;
                 await pool.query(
                     'INSERT INTO messages (direction, body, telefono) VALUES ($1, $2, $3)', 
                     ['incoming', texto, telefono]
                 );
-                io.emit('mensaje_nuevo', { direccion: 'entrante', texto: texto, de: telefono });
+                io.emit('mensaje_nuevo', { direccion: 'entrante', direction: 'incoming', texto: texto, body: texto, de: telefono, telefono: telefono });
             }
         }
         res.sendStatus(200);
@@ -185,7 +178,6 @@ app.get('/api/stats-encuestas', async (req, res) => {
     }
 });
 
-
 const XLSX = require('xlsx');
 
 app.get('/api/exportar-encuestas', async (req, res) => {
@@ -206,12 +198,10 @@ app.get('/api/exportar-encuestas', async (req, res) => {
             ORDER BY created_at DESC
         `);
 
-        // Convertimos los datos a una hoja de Excel
         const worksheet = XLSX.utils.json_to_sheet(result.rows);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Encuestas");
 
-        // Ajustar el ancho de las columnas automáticamente (opcional pero recomendado)
         worksheet['!cols'] = [
             { wch: 20 }, { wch: 25 }, { wch: 10 }, { wch: 15 }, 
             { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, 
@@ -235,44 +225,40 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
-
 // ==========================================================================
-// 🌐 CONFIGURACIÓN DE SOCKET.IO (COMUNICACIÓN EN TIEMPO REAL)
+// 5. 🌐 CONFIGURACIÓN DE SOCKET.IO (CORREGIDA AL 100%)
 // ==========================================================================
 io.on('connection', (socket) => {
     console.log(`🔌 Recepción conectada al panel (ID: ${socket.id})`);
 
-    // Escuchar respuestas de la recepción y enviarlas a WhatsApp
+    // Escuchar respuestas manuales escritas desde la recepción
     socket.on('enviar_a_whatsapp', async (data) => {
         try {
             console.log(`📩 Mensaje saliente detectado hacia: ${data.a}`);
             console.log(`💬 Contenido: "${data.texto}"`);
 
-            // 1. Enviar el mensaje físico al celular del huésped usando tu servicio de WhatsApp
-            // Nota: Cambié a 'enviarMensaje' que es el estándar de Meta para texto libre.
-            await whatsappService.enviarMensaje(data.a, data.texto);
+            // 1. ✅ CORRECCIÓN: Usar 'enviarTexto' que sí existe en tu servicio
+            await whatsappService.enviarTexto(data.a, data.texto);
 
-            // 2. Guardar el mensaje en el historial de la base de datos local
+            // 2. ✅ CORRECCIÓN: Usar la tabla correcta 'messages'
             await pool.query(
-                'INSERT INTO chat_historial (direction, body, telefono) VALUES ($1, $2, $3)',
+                'INSERT INTO messages (direction, body, telefono) VALUES ($1, $2, $3)',
                 ['outgoing', data.texto, data.a]
             );
 
-            // 3. Emitir el mensaje a todas las pantallas de recepción abiertas en tiempo real
-            // Incluimos 'telefono' y 'direction' para que 'app.js' sepa en qué chat pintarlo.
+            // 3. ✅ CORRECCIÓN: Emitir con la estructura de variables esperada por app.js
             io.emit('mensaje_nuevo', { 
                 direccion: 'saliente', 
-                direction: 'outgoing', // Doble compatibilidad por si acaso
+                direction: 'outgoing', 
                 texto: data.texto,
                 body: data.texto,
                 telefono: data.a
             });
 
-            console.log("🚀 ¡Mensaje enviado a Meta y guardado en historial con éxito!");
+            console.log("🚀 ¡Mensaje enviado a Meta y guardado en la base de datos con éxito!");
 
         } catch (error) {
             console.error("❌ Error crítico en el proceso de envío a WhatsApp:", error.message);
-            // Opcional: Notificar al frontend que el mensaje falló
             socket.emit('error_envio', { mensaje: "No se pudo entregar el mensaje a WhatsApp." });
         }
     });
@@ -282,15 +268,13 @@ io.on('connection', (socket) => {
     });
 });
 
-
 const cron = require('node-cron');
 
-/// Programado para las 9:40 AM hora de Colombia
+// Programado para las 11:00 PM hora de Colombia (0 23)
 cron.schedule('0 23 * * *', async () => {
-    console.log('⏰ [CRON] Iniciando limpieza automática de reservas antiguas (9:40 AM)...');
+    console.log('⏰ [CRON] Iniciando limpieza automática de reservas antiguas...');
     try {
         const hoy = new Date().toISOString().split('T')[0];
-        
         const query = 'DELETE FROM reservations WHERE fsalid_reh < $1';
         const resultado = await pool.query(query, [hoy]);
         
@@ -306,7 +290,6 @@ cron.schedule('0 23 * * *', async () => {
     scheduled: true,
     timezone: "America/Bogota"
 });
-
 
 // 6. ENCENDIDO (Configurado para Railway)
 const PORT = process.env.PORT || 3000;

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Hotel del Llano</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        
+        <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3 shadow-sm">
+            <div class="text-center mb-4">
+                <img src="/logo_hotel.png" alt="Logo Hotel" class="img-logo mb-2">                
+            </div>
+            <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
+                <button class="nav-link active mb-2" id="v-pills-chat-tab" data-bs-toggle="pill" data-bs-target="#v-pills-chat" type="button">
+                    <i class="bi bi-chat-text-fill"></i> Chat en Vivo
+                    <span id="alerta-global-chat" class="badge rounded-pill bg-danger ms-2 d-none" style="font-size: 0.65rem;">
+                        <i class="bi bi-circle-fill"></i> Novedad
+                    </span>
+                </button>
+                
+                <button class="nav-link mb-2" id="v-pills-reservas-tab" data-bs-toggle="pill" data-bs-target="#v-pills-reservas" type="button">
+                    <i class="bi bi-file-earmark-excel-fill"></i> Gestión de Reservas
+                </button>
+
+                <button class="nav-link mb-2" id="v-pills-stats-tab" data-bs-toggle="pill" data-bs-target="#v-pills-stats" type="button" onclick="cargarDashboard()">
+                    <i class="bi bi-pie-chart-fill"></i> Estadísticas
+                </button>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="tab-content" id="v-pills-tabContent">
+                
+                <div class="tab-pane fade show active" id="v-pills-chat" role="tabpanel">
+                    <div class="pt-3 pb-2 mb-3 border-bottom">
+                        <h2>Mensajería WhatsApp</h2>
+                    </div>
+                    <div class="row border rounded bg-white shadow-sm g-0">
+                        <div class="col-md-4 border-end" style="height: 75vh; overflow-y: auto;">
+                            <div class="p-3 bg-light border-bottom">
+                                <input type="text" class="form-control" placeholder="Buscar contacto...">
+                            </div>
+                            <div id="listaContactos" class="list-group list-group-flush"></div>
+                        </div>
+                        <div class="col-md-8 d-flex flex-column chat-container">
+                            <div id="mensajes" class="messages-area d-flex flex-column">
+                                <div class="text-center text-muted mt-5">
+                                    <i class="bi bi-whatsapp display-1"></i>
+                                    <p>Selecciona un chat para comenzar</p>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-light border-top mt-auto">
+                                <div class="input-group">
+                                    <input type="text" id="mensajeInput" class="form-control" placeholder="Escribe un mensaje...">
+                                    <button class="btn btn-success" onclick="enviarMensaje()"><i class="bi bi-send"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-reservas" role="tabpanel">
+                    <div class="pt-3 pb-2 mb-3 border-bottom">
+                        <h2>Importación de Reservas</h2>
+                    </div>
+                    
+                    <div class="card shadow-sm mb-2">
+                        <div class="card-body bg-light py-2 px-3">
+                            <form id="uploadForm" class="row g-2 align-items-center">
+                                <div class="col-md-6 d-flex align-items-center">
+                                    <span class="fw-bold text-secondary me-2 text-nowrap" style="font-size: 0.9rem;">Subir Zeus:</span>
+                                    <input type="file" id="excelFile" class="form-control form-control-sm" accept=".xlsx, .xls">
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                                        <i class="bi bi-cloud-arrow-up-fill"></i> Cargar Excel
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-success btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalManual">
+                                        <i class="bi bi-person-plus-fill"></i> Registrar Walk-in
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-6 mx-auto">
+                            <div class="input-group input-group-sm shadow-sm">
+                                <span class="input-group-text bg-white text-muted border-end-0">
+                                    <i class="bi bi-search text-success"></i>
+                                </span>
+                                <input type="text" id="buscadorTabla" class="form-control border-start-0 py-1.5" placeholder="Buscar por nombre o reserva...">
+                            </div>
+                        </div>
+                    </div> 
+
+                    <div class="card shadow-sm">
+                        <div class="table-responsive tabla-reservas-scroll">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Reserva</th>
+                                        <th>Nombre</th>
+                                        <th onclick="ordenarTablaPorFecha('fllega_reh')">
+                                            Llegada <i class="bi bi-arrow-down-up small"></i>
+                                        </th>
+                                        <th onclick="ordenarTablaPorFecha('fsalid_reh')">
+                                            Salida <i class="bi bi-arrow-down-up small"></i>
+                                        </th>
+                                        <th>Teléfono</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaReservas"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-stats" role="tabpanel">
+                    <div class="pt-3 pb-2 mb-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h2>Dashboard de Satisfacción</h2>
+                        <a href="/api/exportar-encuestas" class="btn btn-success">
+                            <i class="bi bi-file-earmark-excel"></i> Descargar Excel
+                        </a>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3 mb-4"><div class="card shadow-sm border-0 py-3"><h6 class="text-center text-muted">Servicio Reservación</h6><div style="height: 200px;"><canvas id="chartReservas"></canvas></div></div></div>
+                        <div class="col-md-3 mb-4"><div class="card shadow-sm border-0 py-3"><h6 class="text-center text-muted">Aseo Habitaciones</h6><div style="height: 200px;"><canvas id="chartAseo"></canvas></div></div></div>
+                        <div class="col-md-3 mb-4"><div class="card shadow-sm border-0 py-3"><h6 class="text-center text-muted">Limpieza Áreas</h6><div style="height: 200px;"><canvas id="chartLimpieza"></canvas></div></div></div>
+                        <div class="col-md-3 mb-4"><div class="card shadow-sm border-0 py-3"><h6 class="text-center text-muted">Alimentos y Bebidas</h6><div style="height: 200px;"><canvas id="chartAlimentos"></canvas></div></div></div>
+                        <div class="col-md-3 mb-4"><div class="card shadow-sm border-0 py-3"><h6 class="text-center text-muted">Amabilidad del personal</h6><div style="height: 200px;"><canvas id="chartAmabilidad"></canvas></div></div></div>
+                        <div class="col-md-3 mb-4"><div class="card shadow-sm border-0 py-3"><h6 class="text-center text-muted">Opinión de la carta</h6><div style="height: 200px;"><canvas id="chartCarta"></canvas></div></div></div>
+                    </div>
+
+                    <div class="card shadow-sm border-0 mt-2">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="mb-0 text-success"><i class="bi bi-chat-heart"></i> Sugerencias y Comentarios Recientes</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 400px;">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Hab.</th>
+                                            <th>Huésped</th>
+                                            <th>Sugerencia / Comentario</th>
+                                            <th>Volvería</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="listaSugerencias"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+
+<div class="modal fade" id="modalManual" tabindex="-1" aria-labelledby="modalManualLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalManualLabel"><i class="bi bi-person-plus"></i> Nuevo Huésped Walk-in</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formManual">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Nombre del Huésped</label>
+            <input type="text" id="m_nombre" class="form-control" placeholder="Ej: JUAN PEREZ" required style="text-transform: uppercase;">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Teléfono WhatsApp</label>
+            <div class="input-group">
+                <span class="input-group-text">+57</span>
+                <input type="text" id="m_telefono" class="form-control" placeholder="3112223344" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha Llegada</label>
+              <input type="date" id="m_llegada" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha Salida</label>
+              <input type="date" id="m_salida" class="form-control" required>
+            </div>
+          </div>
+          <div class="modal-footer px-0 pb-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success">Registrar Huésped</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+
+<script src="/app.js"></script>
+</body>
+</html>

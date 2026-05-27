@@ -392,3 +392,60 @@ function reconstruirFecha(fechaStr) {
     const [dia, mes, anio] = fechaStr.split('/').map(Number);
     return new Date(anio, mes - 1, dia);
 }
+
+
+// ==========================================================================
+// 📡 ESCUCHAR EVENTOS EN TIEMPO REAL DESDE EL SERVIDOR (SOCKET.IO)
+// ==========================================================================
+socket.on('mensaje_nuevo', (datos) => {
+    console.log("🔔 Socket recibido en frontend:", datos);
+
+    // 1. Verificamos si el mensaje pertenece al chat que el recepcionista tiene abierto
+    const esMismoChat = (datos.telefono === contactoSeleccionado || datos.de === contactoSeleccionado);
+    
+    // 2. Verificamos si es una respuesta saliente de la recepción
+    const direccion = datos.direccion || datos.direction;
+    const esMensajePropio = (direccion === 'saliente' || direccion === 'outgoing');
+
+    // Si el chat del cliente está abierto en pantalla o es nuestro, lo pintamos ya mismo
+    if (esMismoChat || esMensajePropio) {
+        renderizarMensaje(datos);
+    }
+    
+    // Movemos el contacto arriba en la lista izquierda
+    cargarContactos();
+});
+
+// 🎨 FUNCIÓN PARA DIBUJAR EL MENSAJE EN PANTALLA EN TIEMPO REAL
+function renderizarMensaje(datos) {
+    const area = document.getElementById('mensajes');
+    if (!area) return;
+
+    // Quitamos el logo de WhatsApp del inicio si está puesto
+    if (area.querySelector('.bi-whatsapp')) {
+        area.innerHTML = '';
+    }
+
+    const div = document.createElement('div');
+    const direccion = datos.direccion || datos.direction;
+    const clase = (direccion === 'incoming' || direccion === 'entrante') ? 'incoming' : 'outgoing';
+    
+    div.className = `message shadow-sm ${clase} position-relative`;
+    
+    // Obtenemos el texto del mensaje
+    const contenidoTexto = datos.texto || datos.body;
+    
+    // Ponemos la hora del minuto actual
+    const ahora = new Date();
+    const horaLimpia = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+
+    div.innerHTML = `
+        <div class="pe-4" style="word-break: break-word;">${contenidoTexto}</div>
+        <span class="text-muted position-absolute" style="font-size: 0.65rem; bottom: 3px; right: 9px; opacity: 0.7;">
+            ${horaLimpia}
+        </span>
+    `;
+    
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight; // Scroll automático al fondo
+}

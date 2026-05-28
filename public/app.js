@@ -417,6 +417,7 @@ socket.on('mensaje_nuevo', (datos) => {
 });
 
 // 🎨 FUNCIÓN PARA DIBUJAR EL MENSAJE EN PANTALLA EN TIEMPO REAL
+// 🎨 FUNCIÓN PARA DIBUJAR EL MENSAJE EN PANTALLA EN TIEMPO REAL
 function renderizarMensaje(datos) {
     const area = document.getElementById('mensajes');
     if (!area) return;
@@ -435,7 +436,7 @@ function renderizarMensaje(datos) {
     // Obtenemos el texto del mensaje
     const contenidoTexto = datos.texto || datos.body;
     
-    // Ponemos la hora del minuto actual
+    // Ponemos la hora del minuto actual (CORREGIDO)
     const ahora = new Date();
     const horaLimpia = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
 

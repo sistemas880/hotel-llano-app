@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const excelService = require('../services/excelService');
-const whatsappService = require('../services/whatsappService'); // <-- IMPORTANTE
+const whatsappService = require('../services/whatsappService'); 
 const pool = require('../config/db');
 
 const upload = multer({ dest: 'uploads/' });
@@ -18,13 +18,19 @@ router.post('/importar', upload.single('file'), async (req, res) => {
     }
 });
 
+// 2. Listar Reservas para la tabla web
+router.get('/', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM reservations ORDER BY fllega_reh DESC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-// Ruta para crear reserva manual (Walk-in)
-// CAMBIO: app por router Y simplificamos la ruta a '/manual'
+// 3. Crear reserva manual (Walk-in)
 router.post('/manual', async (req, res) => {
     const { nombre, telefono, llegada, salida } = req.body;
-    
-    // Generamos un número de reserva ficticio para Walk-ins
     const nreser_res = 'W-' + Math.floor(1000 + Math.random() * 9000);
 
     try {
@@ -32,9 +38,7 @@ router.post('/manual', async (req, res) => {
             INSERT INTO reservations (nreser_res, nombre_res, telef_res, fllega_reh, fsalid_reh)
             VALUES ($1, $2, $3, $4, $5) RETURNING *`;
         
-        // Limpiamos el teléfono por si llega con espacios o símbolos
         const telLimpio = telefono ? telefono.replace(/\D/g, '') : '';
-        
         const values = [nreser_res, nombre.toUpperCase(), telLimpio, llegada, salida];
         
         await pool.query(query, values);
@@ -45,8 +49,7 @@ router.post('/manual', async (req, res) => {
     }
 });
 
-
-// --- ACTUALIZAR TELÉFONO ---
+// 4. ACTUALIZAR TELÉFONO
 router.put('/:id/telefono', async (req, res) => {
     const { id } = req.params;
     const { nuevoTelefono } = req.body;
@@ -60,41 +63,7 @@ router.put('/:id/telefono', async (req, res) => {
     }
 });
 
-
-
-// 4. FUNCIÓN PARA CARGAR EL HISTORIAL DE UN CHAT (MODIFICADA CON HORA)
-async function cargarChat(telefono) {
-    const res = await fetch('/historial');
-    const todos = await res.json();
-    const area = document.getElementById('mensajes');
-    
-    const filtrados = todos.filter(m => m.telefono === telefono);
-    
-    area.innerHTML = ''; 
-    filtrados.forEach(m => {
-        const div = document.createElement('div');
-        const clase = m.direction === 'incoming' ? 'incoming' : 'outgoing';
-        
-        // Mantenemos tus clases originales y agregamos 'position-relative' para acomodar la hora
-        div.className = `message shadow-sm ${clase} position-relative`;
-        
-        // Extraemos la hora usando la columna 'created_at' que vimos en el backend
-        const horaLimpia = formatearHora(m.created_at);
-
-        // Usamos innerHTML en lugar de innerText para poder meter el texto del mensaje Y la hora abajo en su esquina
-        div.innerHTML = `
-            <div class="pe-4" style="word-break: break-word;">${m.body}</div>
-            <span class="text-muted position-absolute" style="font-size: 0.65rem; bottom: 3px; right: 9px; opacity: 0.7;">
-                ${horaLimpia}
-            </span>
-        `;
-        
-        area.appendChild(div);
-    });
-    area.scrollTop = area.scrollHeight;
-}
-
-// --- ACTUALIZAR NOMBRE ---
+// 5. ACTUALIZAR NOMBRE
 router.put('/:id/nombre', async (req, res) => {
     const { id } = req.params;
     const { nuevoNombre } = req.body;
@@ -107,45 +76,39 @@ router.put('/:id/nombre', async (req, res) => {
     }
 });
 
-// 2. Listar Reservas para la tabla web
-router.get('/', async (req, res) => {
+// 🔥 6. NUEVA RUTA: ACTUALIZAR FECHA DE SALIDA (Soluciona el error 404)
+router.put('/:id/fecha-salida', async (req, res) => {
+    const { id } = req.params;
+    const { fecha_salida } = req.body;
+
     try {
-        const result = await pool.query('SELECT * FROM reservations ORDER BY fllega_reh DESC');
-        res.json(result.rows);
+        const query = "UPDATE reservations SET fsalid_reh = $1 WHERE id = $2";
+        const resultado = await pool.query(query, [fecha_salida, id]);
+
+        if (resultado.rowCount > 0) {
+            res.json({ success: true, message: "Fecha de salida modificada con éxito." });
+        } else {
+            res.status(404).json({ error: "No se encontró la reserva indicada." });
+        }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("❌ Error actualizando fecha de salida:", err.message);
+        res.status(500).json({ error: "Error de servidor al modificar fecha de salida" });
     }
 });
 
-// 3. NUEVA RUTA: Enviar Bienvenida Real
-// ... (resto del código igual)
-
+// 7. Enviar Bienvenida Real
 router.post('/enviar-bienvenida', async (req, res) => {
     const { nreser_res, telefono, nombre } = req.body;
 
     try {
-        // NORMALIZACIÓN: Nos aseguramos de que el teléfono sea un string
-        // y le pegamos el indicativo '57' al inicio.
         const telefonoConIndicativo = `57${String(telefono).trim()}`;
-
         const componentes = [
-            {
-                type: "header",
-                parameters: [{ type: "text", text: "¡Bienvenida!" }]
-            },
-            {
-                type: "body",
-                parameters: [{ type: "text", text: nombre }]
-            }
+            { type: "header", parameters: [{ type: "text", text: "¡Bienvenida!" }] },
+            { type: "body", parameters: [{ type: "text", text: nombre }] }
         ];
 
-        // Ahora enviamos el número ya procesado
         await whatsappService.enviarPlantilla(telefonoConIndicativo, "bienvenida2", componentes);
-
-        await pool.query(
-            'UPDATE reservations SET welcome_sent = true WHERE nreser_res = $1',
-            [nreser_res]
-        );
+        await pool.query('UPDATE reservations SET welcome_sent = true WHERE nreser_res = $1', [nreser_res]);
 
         res.json({ success: true, mensaje: "Mensaje enviado con éxito" });
     } catch (error) {
@@ -154,18 +117,11 @@ router.post('/enviar-bienvenida', async (req, res) => {
     }
 });
 
-
-// --- VERIFICAR SI HAY MENSAJES GLOBALES SIN LEER ---
+// 8. VERIFICAR SI HAY MENSAJES GLOBALES SIN LEER
 router.get('/notificaciones/pendientes', async (req, res) => {
     try {
-        // Contamos cuántos mensajes entrantes están en 'false'
-        const resultado = await pool.query(
-            "SELECT COUNT(*) FROM messages WHERE direction = 'incoming' AND leido = false"
-        );
-        
+        const resultado = await pool.query("SELECT COUNT(*) FROM messages WHERE direction = 'incoming' AND leido = false");
         const cantidad = parseInt(resultado.rows[0].count);
-        
-        // Si la cantidad es mayor a 0, enviamos 'hayPendientes: true'
         res.json({ hayPendientes: cantidad > 0, conteo: cantidad });
     } catch (err) {
         console.error("Error al contar mensajes pendientes:", err);
@@ -173,48 +129,17 @@ router.get('/notificaciones/pendientes', async (req, res) => {
     }
 });
 
+// 9. Enviar Encuesta Real
 router.post('/enviar-encuesta', async (req, res) => {
     const { nreser_res, telefono, nombre } = req.body;
 
     try {
         const telefonoConIndicativo = `57${String(telefono).trim()}`;
+        const bodyComponent = { type: "body", parameters: [{ type: "text", text: nombre || "Huésped" }] };
+        const buttonComponent = { type: "button", sub_type: "FLOW", index: 0, parameters: [{ type: "text", text: "Llamar ahora" }] };
 
-        // 1. Componente del cuerpo con el nombre (igual que en tu GAS)
-        const bodyComponent = {
-            type: "body",
-            parameters: [
-                {
-                    type: "text",
-                    text: nombre || "Huésped"
-                }
-            ]
-        };
-
-        // 2. Componente de botón para el FLOW (encuesta_version_2)
-        const buttonComponent = {
-            type: "button",
-            sub_type: "FLOW",
-            index: 0,
-            parameters: [
-                {
-                    type: "text",
-                    text: "Llamar ahora" // Aunque sea un Flow, Meta a veces pide este parámetro de texto
-                }
-            ]
-        };
-
-        // 3. Enviamos usando tu whatsappService
-        await whatsappService.enviarPlantilla(
-            telefonoConIndicativo, 
-            "encuesta_version_2", 
-            [bodyComponent, buttonComponent]
-        );
-
-        // ACTUALIZACIÓN: Marcamos en la DB que se envió
-        await pool.query(
-            'UPDATE reservations SET survey_sent = true WHERE nreser_res = $1',
-            [nreser_res]
-        );
+        await whatsappService.enviarPlantilla(telefonoConIndicativo, "encuesta_version_2", [bodyComponent, buttonComponent]);
+        await pool.query('UPDATE reservations SET survey_sent = true WHERE nreser_res = $1', [nreser_res]);
 
         res.json({ success: true });
     } catch (error) {
@@ -223,17 +148,4 @@ router.post('/enviar-encuesta', async (req, res) => {
     }
 });
 
-
-function formatearHora(fechaISO) {
-    if (!fechaISO) return '';
-    const date = new Date(fechaISO);
-    
-    // Extrae las horas y minutos en la hora local de la recepción
-    const horas = String(date.getHours()).padStart(2, '0');
-    const minutos = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${horas}:${minutos}`; // Te devolverá algo como "18:24"
-}
-
 module.exports = router;
-

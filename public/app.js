@@ -345,13 +345,21 @@ function aplicarOrdenamientoVisual() {
 // ==========================================================================
 async function cargarDashboard() {
     try {
-        const res = await fetch('/api/stats-encuestas');
+        // Leemos el valor del filtro de mes (ej: "2026-06")
+        const mesSeleccionado = document.getElementById('filtroMes').value;
+        let url = '/api/stats-encuestas';
+        
+        if (mesSeleccionado) {
+            url += `?mes=${mesSeleccionado}`;
+        }
+
+        const res = await fetch(url);
         const datos = await res.json();
         
         const renderChart = (id, columna) => {
             const counts = {};
             datos.forEach(d => { const val = d[columna] || 'N/A'; counts[val] = (counts[val] || 0) + 1; });
-            if (charts[id]) charts[id].destroy();
+            if (charts[id]) charts[id].destroy(); // Destruye la gráfica vieja antes de pintar la nueva
             
             charts[id] = new Chart(document.getElementById(id), {
                 type: 'doughnut',
@@ -370,6 +378,7 @@ async function cargarDashboard() {
         renderChart('chartAmabilidad', 'amabilidad_personal');
         renderChart('chartCarta', 'carta_opinion');
 
+        // Actualiza la tabla de sugerencias inferior
         document.getElementById('listaSugerencias').innerHTML = datos.map(d => `
             <tr>
                 <td><span class="badge bg-secondary">${d.habitacion || '---'}</span></td>
@@ -379,6 +388,19 @@ async function cargarDashboard() {
             </tr>
         `).join('');
     } catch (err) { console.error(err); }
+}
+
+// Nueva función para descargar el Excel respetando el mes elegido
+function descargarExcelFiltrado() {
+    const mesSeleccionado = document.getElementById('filtroMes').value;
+    let url = '/api/exportar-encuestas';
+    
+    if (mesSeleccionado) {
+        url += `?mes=${mesSeleccionado}`;
+    }
+    
+    // Abre la ruta de descarga en el navegador
+    window.location.href = url;
 }
 
 // Auxiliares internos

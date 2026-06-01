@@ -153,24 +153,27 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// Ruta para obtener las estadísticas de las encuestas
+// 📊 RUTA PARA OBTENER ESTADÍSTICAS (AHORA CON FILTRO DE MES)
 app.get('/api/stats-encuestas', async (req, res) => {
     try {
-        const result = await pool.query(`
+        const { mes } = req.query; // Espera formato 'YYYY-MM'
+        let query = `
             SELECT 
-                servicio_reserva, 
-                aseo_habitacion, 
-                limpieza_areas, 
-                alimentos_bebidas,
-                carta_opinion,
-                amabilidad_personal,
-                habitacion,
-                nombre_huesped,
-                sugerencias_finales,
-                volveria_hospedarse
+                servicio_reserva, aseo_habitacion, limpieza_areas, 
+                alimentos_bebidas, carta_opinion, amabilidad_personal,
+                habitacion, nombre_huesped, sugerencias_finales, volveria_hospedarse
             FROM surveys 
-            ORDER BY created_at DESC
-        `);
+        `;
+        const params = [];
+
+        if (mes) {
+            query += ` WHERE TO_CHAR(created_at, 'YYYY-MM') = $1 `;
+            params.push(mes);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        const result = await pool.query(query, params);
         res.json(result.rows);
     } catch (err) {
         console.error("Error en /api/stats-encuestas:", err);
@@ -180,23 +183,29 @@ app.get('/api/stats-encuestas', async (req, res) => {
 
 const XLSX = require('xlsx');
 
+// 📥 RUTA PARA EXPORTAR EXCEL (AHORA CON FILTRO DE MES)
 app.get('/api/exportar-encuestas', async (req, res) => {
     try {
-        const result = await pool.query(`
+        const { mes } = req.query;
+        let query = `
             SELECT 
-                created_at AS "Fecha",
-                nombre_huesped AS "Huésped",
-                habitacion AS "Habitación",
-                servicio_reserva AS "Servicio Reserva",
-                aseo_habitacion AS "Aseo Habitación",
-                limpieza_areas AS "Limpieza Áreas",
-                alimentos_bebidas AS "Alimentos y Bebidas",
-                amabilidad_personal AS "Amabilidad",
-                volveria_hospedarse AS "Volvería",
+                created_at AS "Fecha", nombre_huesped AS "Huésped", habitacion AS "Habitación",
+                servicio_reserva AS "Servicio Reserva", aseo_habitacion AS "Aseo Habitación",
+                limpieza_areas AS "Limpieza Áreas", alimentos_bebidas AS "Alimentos y Bebidas",
+                amabilidad_personal AS "Amabilidad", volveria_hospedarse AS "Volvería",
                 sugerencias_finales AS "Sugerencias"
             FROM surveys 
-            ORDER BY created_at DESC
-        `);
+        `;
+        const params = [];
+
+        if (mes) {
+            query += ` WHERE TO_CHAR(created_at, 'YYYY-MM') = $1 `;
+            params.push(mes);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        const result = await pool.query(query, params);
 
         const worksheet = XLSX.utils.json_to_sheet(result.rows);
         const workbook = XLSX.utils.book_new();
@@ -219,7 +228,6 @@ app.get('/api/exportar-encuestas', async (req, res) => {
         res.status(500).send("Error al generar el Excel");
     }
 });
-
 // 4. SERVIR LA INTERFAZ WEB
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');

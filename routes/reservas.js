@@ -148,4 +148,27 @@ router.post('/enviar-encuesta', async (req, res) => {
     }
 });
 
+
+// 🔥 RUTA TEMPORAL PARA ELIMINAR DUPLICADOS DE ENCUESTAS
+app.get('/api/limpiar-encuestas-duplicadas', async (req, res) => {
+    try {
+        const query = `
+            DELETE FROM surveys 
+            WHERE id NOT IN (
+                SELECT MIN(id) 
+                FROM surveys 
+                GROUP BY telefono, nombre_huesped, habitacion
+            )
+        `;
+        const resultado = await pool.query(query);
+        res.json({ 
+            success: true, 
+            mensaje: `¡Limpieza de base de datos completada con éxito! Se eliminaron ${resultado.rowCount} registros duplicados de la tabla surveys.` 
+        });
+    } catch (err) {
+        console.error("❌ Error al ejecutar la limpieza de surveys:", err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 module.exports = router;

@@ -472,3 +472,60 @@ function renderizarMensaje(datos) {
     area.appendChild(div);
     area.scrollTop = area.scrollHeight; // Scroll automático al fondo
 }
+
+// ==========================================================================
+// IMPORTAR RESERVAS DESDE EXCEL
+// ==========================================================================
+const uploadForm = document.getElementById('uploadForm');
+
+if (uploadForm) {
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault(); // 🔥 ESTA ES LA MAGIA: Evita que la página se recargue
+
+        const fileInput = document.getElementById('excelFile');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            alert('⚠️ Por favor selecciona un archivo Excel de Zeus primero.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            // Cambiamos el texto del botón temporalmente
+            const btn = uploadForm.querySelector('button[type="submit"]');
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Cargando...';
+            btn.disabled = true;
+
+            const response = await fetch('/api/reservas/importar', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('✅ ' + (data.mensaje || 'Reservas importadas con éxito'));
+                fileInput.value = ''; // Limpiamos el input
+                cargarReservas();     // Refrescamos la tabla instantáneamente
+            } else {
+                alert('❌ Error: ' + (data.error || 'No se pudo importar el archivo'));
+            }
+
+            // Restauramos el botón a su estado normal
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+
+        } catch (err) {
+            console.error("Error al subir el archivo:", err);
+            alert('❌ Error de red al intentar subir el archivo.');
+            
+            const btn = uploadForm.querySelector('button[type="submit"]');
+            btn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill"></i> Cargar Excel';
+            btn.disabled = false;
+        }
+    });
+}

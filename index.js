@@ -1,3 +1,4 @@
+require('dotenv').config();
 // 1. IMPORTACIONES
 const express = require('express');
 const http = require('http');

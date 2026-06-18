@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Hotel del Llano</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e4620 0%, #0f2811 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card-login {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: #ffffff;
+            max-width: 400px;
+            width: 100%;
+            padding: 25px;
+        }
+        .btn-success-custom {
+            background-color: #28a745;
+            border-color: #28a745;
+            transition: all 0.3s ease;
+        }
+        .btn-success-custom:hover {
+            background-color: #1e7e34;
+            border-color: #1e7e34;
+            transform: translateY(-1px);
+        }
+        .img-logo {
+            max-width: 150px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card-login text-center">
+    <img src="/logo_hotel.png" alt="Logo Hotel del Llano" class="img-logo mb-3">
+    <h4 class="mb-4 text-secondary fw-bold">Panel de Administración</h4>
+    
+    <div id="alertError" class="alert alert-danger d-none" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> <span id="errorMsg"></span>
+    </div>
+
+    <form id="loginForm">
+        <div class="form-floating mb-3 text-start">
+            <input type="text" class="form-control" id="username" placeholder="Usuario" required autocomplete="username">
+            <label for="username"><i class="bi bi-person-fill text-muted me-2"></i>Usuario</label>
+        </div>
+        <div class="form-floating mb-4 text-start">
+            <input type="password" class="form-control" id="password" placeholder="Contraseña" required autocomplete="current-password">
+            <label for="password"><i class="bi bi-lock-fill text-muted me-2"></i>Contraseña</label>
+        </div>
+        <button type="submit" class="btn btn-success btn-success-custom w-100 py-2.5 fw-bold text-white">
+            <i class="bi bi-box-arrow-in-right me-2"></i> Ingresar al Sistema
+        </button>
+    </form>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alertError = document.getElementById('alertError');
+        const errorMsg = document.getElementById('errorMsg');
+        
+        alertError.classList.add('d-none');
+
+        const user = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                // Redirigir directamente al panel principal tras el login exitoso
+                window.location.href = '/';
+            } else {
+                errorMsg.innerText = data.error || 'Credenciales inválidas';
+                alertError.classList.remove('d-none');
+            }
+        } catch (err) {
+            errorMsg.innerText = 'Error de conexión con el servidor.';
+            alertError.classList.remove('d-none');
+        }
+    });
+</script>
+</body>
+</html>

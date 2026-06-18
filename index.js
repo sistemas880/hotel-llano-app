@@ -3,10 +3,12 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');          // 🔐 Seguridad para sesiones
+const cookieParser = require('cookie-parser'); // 🔐 Lector de cookies seguras
+const bcrypt = require('bcryptjs');
 
 // IMPORTAR NUESTROS MÓDULOS MODULARES
 const pool = require('./config/db');
-
 const whatsappService = require('./services/whatsappService');
 const reservasRoutes = require('./routes/reservas'); 
 
@@ -16,14 +18,97 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.json());
+app.use(cookieParser()); // 🔐 Habilitar el uso de cookies
 app.use(express.static('public'));
 app.use('/api/reservas', reservasRoutes); 
 
 const VERIFY_TOKEN = "ALGO_SEGURO_123";
+const JWT_SECRET = process.env.JWT_SECRET || "ClaveSecretaHotelDelLlano2024*"; // Firma de seguridad
 
-// 3. RUTAS Y WEBHOOKS
+// 🔐 MIDDLEWARE "GUARDIÁN": Detiene a cualquiera que no tenga sesión iniciada
+const verificarTokenBackend = (req, res, next) => {
+    const token = req.cookies?.session_token;
 
-// VALIDACIÓN: Respuesta al saludo de Meta
+    if (!token) {
+        return res.status(401).json({ error: "Acceso denegado. Inicie sesión." });
+    }
+
+    try {
+        const verificado = jwt.verify(token, JWT_SECRET);
+        req.usuario = verificado;
+        next(); 
+    } catch (err) {
+        res.clearCookie('session_token');
+        return res.status(401).json({ error: "Sesión inválida o expirada." });
+    }
+};
+
+// ==========================================================================
+// 🔑 ENDPOINTS DE AUTENTICACIÓN (LOGIN, VERIFY, LOGOUT)
+// ==========================================================================
+
+// Procesar el formulario de login externo
+app.post('/api/auth/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        // 1. Buscar al usuario en la tabla usuarios de PostgreSQL
+        const resultado = await pool.query('SELECT * FROM usuarios WHERE username = $1', [username]);
+
+        if (resultado.rows.length === 0) {
+            return res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+        }
+
+        const usuarioDB = resultado.rows[0];
+
+        // 2. Comparar la contraseña ingresada con el hash encriptado de la DB
+        const passwordCorrecto = await bcrypt.compare(password, usuarioDB.password);
+
+        if (!passwordCorrecto) {
+            return res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+        }
+
+        // 3. Si todo está bien, generar el Token JWT
+        const token = jwt.sign({ user: usuarioDB.username, nombre: usuarioDB.nombre }, JWT_SECRET, { expiresIn: '24h' });
+
+        // 4. Guardar en la cookie de sesión
+        res.cookie('session_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production', 
+            maxAge: 24 * 60 * 60 * 1000 
+        });
+
+        return res.json({ exito: true });
+
+    } catch (err) {
+        console.error("❌ Error en el proceso de login:", err.message);
+        return res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
+
+app.get('/api/auth/verify', (req, res) => {
+    const token = req.cookies?.session_token;
+    if (!token) return res.sendStatus(401);
+
+    try {
+        jwt.verify(token, JWT_SECRET);
+        res.status(200).json({ valido: true });
+    } catch (err) {
+        res.sendStatus(401);
+    }
+});
+
+// 🚪 ENDPOINT PARA CERRAR SESIÓN (DESTRUIR COOKIE)
+// 🚪 ENDPOINT PARA CERRAR SESIÓN (DESTRUIR COOKIE)
+app.post('/api/auth/logout', (req, res) => {
+    res.clearCookie('session_token'); // Elimina la cookie de seguridad
+    return res.json({ exito: true });
+});
+
+// ==========================================================================
+// 3. RUTAS Y WEBHOOKS PROTEGIDOS
+// ==========================================================================
+
 app.get('/webhook', (req, res) => {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
@@ -37,8 +122,7 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-// HISTORIAL: Obtener mensajes de la DB
-app.get('/historial', async (req, res) => {
+app.get('/historial', verificarTokenBackend, async (req, res) => {
     try {
         const resultado = await pool.query('SELECT * FROM messages ORDER BY created_at ASC');
         res.json(resultado.rows);
@@ -47,8 +131,7 @@ app.get('/historial', async (req, res) => {
     }
 });
 
-// CONTACTOS: Obtener lista de números únicos
-app.get('/contactos', async (req, res) => {
+app.get('/contactos', verificarTokenBackend, async (req, res) => {
     try {
         const query = `
             SELECT 
@@ -66,7 +149,7 @@ app.get('/contactos', async (req, res) => {
     }
 });
 
-app.post('/api/leer-mensajes/:telefono', async (req, res) => {
+app.post('/api/leer-mensajes/:telefono', verificarTokenBackend, async (req, res) => {
     try {
         await pool.query(
             "UPDATE messages SET leido = TRUE WHERE telefono = $1 AND direction = 'incoming'",
@@ -78,10 +161,8 @@ app.post('/api/leer-mensajes/:telefono', async (req, res) => {
     }
 });
 
-// RECEPCIÓN: Aquí llegan los mensajes de los clientes desde Meta
 app.post('/webhook', async (req, res) => {
     const body = req.body;
-
     if (body.object) {
         const entry = body.entry?.[0];
         const changes = entry?.changes?.[0];
@@ -91,14 +172,10 @@ app.post('/webhook', async (req, res) => {
         if (message) {
             const telefono = message.from;
 
-            // --- LÓGICA PARA DETECTAR RESPUESTA DE ENCUESTA (FLOWS) ---
             if (message.type === 'interactive' && message.interactive?.type === 'nfm_reply') {
                 try {
                     const response = JSON.parse(message.interactive.nfm_reply.response_json);
                     const de = message.from;
-
-                    console.log(`📊 Limpiando y guardando encuesta de: ${de}`);
-
                     const limpiarRespuesta = (valor) => {
                         if (!valor) return "No responde";
                         return valor.includes('_') ? valor.split('_')[1] : valor;
@@ -114,196 +191,97 @@ app.post('/webhook', async (req, res) => {
                     `;
 
                     const values = [
-                        de,
-                        response.screen_0_Nombres_y_Apellidos_1,
-                        response.screen_0_N_de_Habitacin_2,
+                        de, response.screen_0_Nombres_y_Apellidos_1, response.screen_0_N_de_Habitacin_2,
                         limpiarRespuesta(response.screen_0_Servicio_en_Reservacin_3),
                         limpiarRespuesta(response.screen_0_Aseo_de_las_habitaciones_4),
                         limpiarRespuesta(response.screen_0_Limpieza_de_reas_comunes_5),
                         limpiarRespuesta(response.screen_0_Servicio_alimentos_y_bebidas_6),
                         limpiarRespuesta(response.screen_1_Nuestra_carta_es_opcional_0),
-                        response.screen_1_Carta_opcional_1, 
-                        limpiarRespuesta(response.screen_1_Amabilidad_del_personal_2),
-                        limpiarRespuesta(response.screen_1_Volvera_a_hospedarse_3),
-                        response.screen_1_Sugerencias_4 
+                        response.screen_1_Carta_opcional_1, limpiarRespuesta(response.screen_1_Amabilidad_del_personal_2),
+                        limpiarRespuesta(response.screen_1_Volvera_a_hospedarse_3), response.screen_1_Sugerencias_4 
                     ];
 
                     await pool.query(query, values);
-                    
-                    console.log("✅ Encuesta guardada con datos limpios.");
-                    await whatsappService.enviarTexto(de, "✅ ¡Gracias! Hemos recibido tu encuesta. Tu opinión es muy importante para el Hotel del Llano.");
-
-                } catch (err) {
-                    console.error("❌ Error al procesar Flow:", err);
-                }
-            }
-            
-            // --- LÓGICA NORMAL DE MENSAJES DE TEXTO ENTRANTE ---
-            else if (message.text) {
+                    await whatsappService.enviarTexto(de, "✅ ¡Gracias! Hemos recibido tu encuesta.");
+                } catch (err) { console.error(err); }
+            } else if (message.text) {
                 const texto = message.text.body;
-                await pool.query(
-                    'INSERT INTO messages (direction, body, telefono) VALUES ($1, $2, $3)', 
-                    ['incoming', texto, telefono]
-                );
+                await pool.query('INSERT INTO messages (direction, body, telefono) VALUES ($1, $2, $3)', ['incoming', texto, telefono]);
                 io.emit('mensaje_nuevo', { direccion: 'entrante', direction: 'incoming', texto: texto, body: texto, de: telefono, telefono: telefono });
             }
         }
         res.sendStatus(200);
-    } else {
-        res.sendStatus(404);
-    }
+    } else { res.sendStatus(404); }
 });
 
-// 📊 RUTA PARA OBTENER ESTADÍSTICAS (AHORA CON FILTRO DE MES)
-app.get('/api/stats-encuestas', async (req, res) => {
+app.get('/api/stats-encuestas', verificarTokenBackend, async (req, res) => {
     try {
-        const { mes } = req.query; // Espera formato 'YYYY-MM'
-        let query = `
-            SELECT 
-                servicio_reserva, aseo_habitacion, limpieza_areas, 
-                alimentos_bebidas, carta_opinion, amabilidad_personal,
-                habitacion, nombre_huesped, sugerencias_finales, volveria_hospedarse
-            FROM surveys 
-        `;
+        const { mes } = req.query;
+        let query = `SELECT servicio_reserva, aseo_habitacion, limpieza_areas, alimentos_bebidas, carta_opinion, amabilidad_personal, habitacion, nombre_huesped, sugerencias_finales, volveria_hospedarse FROM surveys `;
         const params = [];
-
-        if (mes) {
-            query += ` WHERE TO_CHAR(created_at, 'YYYY-MM') = $1 `;
-            params.push(mes);
-        }
-
+        if (mes) { query += ` WHERE TO_CHAR(created_at, 'YYYY-MM') = $1 `; params.push(mes); }
         query += ` ORDER BY created_at DESC`;
-
         const result = await pool.query(query, params);
         res.json(result.rows);
-    } catch (err) {
-        console.error("Error en /api/stats-encuestas:", err);
-        res.status(500).json({ error: "Error al obtener datos" });
-    }
+    } catch (err) { res.status(500).json({ error: "Error" }); }
 });
 
 const XLSX = require('xlsx');
-
-// 📥 RUTA PARA EXPORTAR EXCEL (AHORA CON FILTRO DE MES)
-app.get('/api/exportar-encuestas', async (req, res) => {
+app.get('/api/exportar-encuestas', verificarTokenBackend, async (req, res) => {
     try {
         const { mes } = req.query;
-        let query = `
-            SELECT 
-                created_at AS "Fecha", nombre_huesped AS "Huésped", habitacion AS "Habitación",
-                servicio_reserva AS "Servicio Reserva", aseo_habitacion AS "Aseo Habitación",
-                limpieza_areas AS "Limpieza Áreas", alimentos_bebidas AS "Alimentos y Bebidas",
-                amabilidad_personal AS "Amabilidad", volveria_hospedarse AS "Volvería",
-                sugerencias_finales AS "Sugerencias"
-            FROM surveys 
-        `;
+        let query = `SELECT created_at AS "Fecha", nombre_huesped AS "Huésped", habitacion AS "Habitación", servicio_reserva AS "Servicio Reserva", aseo_habitacion AS "Aseo Habitación", limpieza_areas AS "Limpieza Áreas", alimentos_bebidas AS "Alimentos y Bebidas", amabilidad_personal AS "Amabilidad", volveria_hospedarse AS "Volvería", sugerencias_finales AS "Sugerencias" FROM surveys `;
         const params = [];
-
-        if (mes) {
-            query += ` WHERE TO_CHAR(created_at, 'YYYY-MM') = $1 `;
-            params.push(mes);
-        }
-
+        if (mes) { query += ` WHERE TO_CHAR(created_at, 'YYYY-MM') = $1 `; params.push(mes); }
         query += ` ORDER BY created_at DESC`;
-
         const result = await pool.query(query, params);
-
         const worksheet = XLSX.utils.json_to_sheet(result.rows);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Encuestas");
-
-        worksheet['!cols'] = [
-            { wch: 20 }, { wch: 25 }, { wch: 10 }, { wch: 15 }, 
-            { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, 
-            { wch: 10 }, { wch: 50 }
-        ];
-
         const buf = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
         res.setHeader('Content-Disposition', 'attachment; filename="Reporte_Encuestas_Hotel_Llano.xlsx"');
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.send(buf);
-
-    } catch (err) {
-        console.error("Error al exportar:", err);
-        res.status(500).send("Error al generar el Excel");
-    }
-});
-// 4. SERVIR LA INTERFAZ WEB
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
+    } catch (err) { res.status(500).send("Error"); }
 });
 
 // ==========================================================================
-// 5. 🌐 CONFIGURACIÓN DE SOCKET.IO (CORREGIDA AL 100%)
+// 4. SERVIR LA INTERFAZ WEB CON FILTRO INTERNO 🔒
+// ==========================================================================
+app.get('/', (req, res) => {
+    const token = req.cookies?.session_token;
+    
+    // Si no tiene la cookie del token iniciada, lo saca volando a login.html
+    if (!token) {
+        return res.redirect('/login.html');
+    }
+    try {
+        jwt.verify(token, JWT_SECRET);
+        // Si el token es correcto, le muestra el panel
+        res.sendFile(__dirname + '/index.html'); 
+    } catch (err) {
+        res.clearCookie('session_token');
+        res.redirect('/login.html');
+    }
+});
+
+// ==========================================================================
+// 5. CONFIGURACIÓN DE SOCKET.IO
 // ==========================================================================
 io.on('connection', (socket) => {
     console.log(`🔌 Recepción conectada al panel (ID: ${socket.id})`);
-
-    // Escuchar respuestas manuales escritas desde la recepción
     socket.on('enviar_a_whatsapp', async (data) => {
         try {
-            console.log(`📩 Mensaje saliente detectado hacia: ${data.a}`);
-            console.log(`💬 Contenido: "${data.texto}"`);
-
-            // 1. ✅ CORRECCIÓN: Usar 'enviarTexto' que sí existe en tu servicio
             await whatsappService.enviarTexto(data.a, data.texto);
-
-            // 2. ✅ CORRECCIÓN: Usar la tabla correcta 'messages'
-            await pool.query(
-                'INSERT INTO messages (direction, body, telefono) VALUES ($1, $2, $3)',
-                ['outgoing', data.texto, data.a]
-            );
-
-            // 3. ✅ CORRECCIÓN: Emitir con la estructura de variables esperada por app.js
-            io.emit('mensaje_nuevo', { 
-                direccion: 'saliente', 
-                direction: 'outgoing', 
-                texto: data.texto,
-                body: data.texto,
-                telefono: data.a
-            });
-
-            console.log("🚀 ¡Mensaje enviado a Meta y guardado en la base de datos con éxito!");
-
-        } catch (error) {
-            console.error("❌ Error crítico en el proceso de envío a WhatsApp:", error.message);
-            socket.emit('error_envio', { mensaje: "No se pudo entregar el mensaje a WhatsApp." });
-        }
+            await pool.query('INSERT INTO messages (direction, body, telefono) VALUES ($1, $2, $3)', ['outgoing', data.texto, data.a]);
+            io.emit('mensaje_nuevo', { direccion: 'saliente', direction: 'outgoing', texto: data.texto, body: data.texto, telefono: data.a });
+        } catch (error) { socket.emit('error_envio', { mensaje: "Error" }); }
     });
-
-    socket.on('disconnect', () => {
-        console.log(`❌ Conexión cerrada con el panel (ID: ${socket.id})`);
-    });
+    socket.on('disconnect', () => {});
 });
 
-const cron = require('node-cron');
-
-// Programado para las 11:00 PM hora de Colombia (0 23)
-cron.schedule('0 23 * * *', async () => {
-    console.log('⏰ [CRON] Iniciando limpieza automática de reservas antiguas...');
-    try {
-        const hoy = new Date().toISOString().split('T')[0];
-        const query = 'DELETE FROM reservations WHERE fsalid_reh < $1';
-        const resultado = await pool.query(query, [hoy]);
-        
-        if (resultado.rowCount > 0) {
-            console.log(`🧹 [CRON] ÉXITO: Se eliminaron ${resultado.rowCount} reservas antiguas.`);
-        } else {
-            console.log('✅ [CRON] Sin reservas antiguas para borrar.');
-        }
-    } catch (err) {
-        console.error('❌ [CRON] Error en la ejecución:', err.message);
-    }
-}, {
-    scheduled: true,
-    timezone: "America/Bogota"
-});
-
-// 6. ENCENDIDO (Configurado para Railway)
 const PORT = process.env.PORT || 3000;
-
 server.listen(PORT, () => {
-    console.log('--- SISTEMA HOTEL DEL LLANO ONLINE ---');
+    console.log('--- SISTEMA HOTEL DEL LLANO ONLINE CON LOGIN ---');
     console.log(`Servidor corriendo en el puerto ${PORT}...`);
 });

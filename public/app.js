@@ -22,6 +22,29 @@ document.getElementById('mensajeInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') enviarMensaje();
 });
 
+// Escuchador autónomo para el botón de cerrar sesión (Cero JS en el HTML)
+document.addEventListener('DOMContentLoaded', () => {
+    const botonLogout = document.getElementById('btn-logout');
+    
+    if (botonLogout) {
+        botonLogout.addEventListener('click', async (e) => {
+            e.preventDefault(); 
+            try {
+                const respuesta = await fetch('/api/auth/logout', { method: 'POST' });
+                if (respuesta.ok) {
+                    window.location.href = '/login.html';
+                } else {
+                    console.error("El servidor no respondió correctamente al logout.");
+                    window.location.href = '/login.html';
+                }
+            } catch (err) {
+                console.error("Error de red al intentar cerrar sesión:", err);
+                window.location.href = '/login.html';
+            }
+        });
+    }
+});
+
 // ==========================================================================
 // MÓDULO: CHAT EN VIVO Y CONTACTOS
 // ==========================================================================
@@ -345,7 +368,6 @@ function aplicarOrdenamientoVisual() {
 // ==========================================================================
 async function cargarDashboard() {
     try {
-        // Leemos el valor del filtro de mes (ej: "2026-06")
         const mesSeleccionado = document.getElementById('filtroMes').value;
         let url = '/api/stats-encuestas';
         
@@ -359,7 +381,7 @@ async function cargarDashboard() {
         const renderChart = (id, columna) => {
             const counts = {};
             datos.forEach(d => { const val = d[columna] || 'N/A'; counts[val] = (counts[val] || 0) + 1; });
-            if (charts[id]) charts[id].destroy(); // Destruye la gráfica vieja antes de pintar la nueva
+            if (charts[id]) charts[id].destroy(); 
             
             charts[id] = new Chart(document.getElementById(id), {
                 type: 'doughnut',
@@ -378,7 +400,6 @@ async function cargarDashboard() {
         renderChart('chartAmabilidad', 'amabilidad_personal');
         renderChart('chartCarta', 'carta_opinion');
 
-        // Actualiza la tabla de sugerencias inferior
         document.getElementById('listaSugerencias').innerHTML = datos.map(d => `
             <tr>
                 <td><span class="badge bg-secondary">${d.habitacion || '---'}</span></td>
@@ -390,7 +411,6 @@ async function cargarDashboard() {
     } catch (err) { console.error(err); }
 }
 
-// Nueva función para descargar el Excel respetando el mes elegido
 function descargarExcelFiltrado() {
     const mesSeleccionado = document.getElementById('filtroMes').value;
     let url = '/api/exportar-encuestas';
@@ -398,8 +418,6 @@ function descargarExcelFiltrado() {
     if (mesSeleccionado) {
         url += `?mes=${mesSeleccionado}`;
     }
-    
-    // Abre la ruta de descarga en el navegador
     window.location.href = url;
 }
 
@@ -415,36 +433,26 @@ function reconstruirFecha(fechaStr) {
     return new Date(anio, mes - 1, dia);
 }
 
-
 // ==========================================================================
 // 📡 ESCUCHAR EVENTOS EN TIEMPO REAL DESDE EL SERVIDOR (SOCKET.IO)
 // ==========================================================================
 socket.on('mensaje_nuevo', (datos) => {
     console.log("🔔 Socket recibido en frontend:", datos);
 
-    // 1. Verificamos si el mensaje pertenece al chat que el recepcionista tiene abierto
     const esMismoChat = (datos.telefono === contactoSeleccionado || datos.de === contactoSeleccionado);
-    
-    // 2. Verificamos si es una respuesta saliente de la recepción
     const direccion = datos.direccion || datos.direction;
     const esMensajePropio = (direccion === 'saliente' || direccion === 'outgoing');
 
-    // Si el chat del cliente está abierto en pantalla o es nuestro, lo pintamos ya mismo
     if (esMismoChat || esMensajePropio) {
         renderizarMensaje(datos);
     }
-    
-    // Movemos el contacto arriba en la lista izquierda
     cargarContactos();
 });
 
-// 🎨 FUNCIÓN PARA DIBUJAR EL MENSAJE EN PANTALLA EN TIEMPO REAL
-// 🎨 FUNCIÓN PARA DIBUJAR EL MENSAJE EN PANTALLA EN TIEMPO REAL
 function renderizarMensaje(datos) {
     const area = document.getElementById('mensajes');
     if (!area) return;
 
-    // Quitamos el logo de WhatsApp del inicio si está puesto
     if (area.querySelector('.bi-whatsapp')) {
         area.innerHTML = '';
     }
@@ -454,11 +462,8 @@ function renderizarMensaje(datos) {
     const clase = (direccion === 'incoming' || direccion === 'entrante') ? 'incoming' : 'outgoing';
     
     div.className = `message shadow-sm ${clase} position-relative`;
-    
-    // Obtenemos el texto del mensaje
     const contenidoTexto = datos.texto || datos.body;
     
-    // Ponemos la hora del minuto actual (CORREGIDO)
     const ahora = new Date();
     const horaLimpia = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
 
@@ -470,7 +475,7 @@ function renderizarMensaje(datos) {
     `;
     
     area.appendChild(div);
-    area.scrollTop = area.scrollHeight; // Scroll automático al fondo
+    area.scrollTop = area.scrollHeight; 
 }
 
 // ==========================================================================
@@ -480,7 +485,7 @@ const uploadForm = document.getElementById('uploadForm');
 
 if (uploadForm) {
     uploadForm.addEventListener('submit', async (e) => {
-        e.preventDefault(); // 🔥 ESTA ES LA MAGIA: Evita que la página se recargue
+        e.preventDefault(); 
 
         const fileInput = document.getElementById('excelFile');
         const file = fileInput.files[0];
@@ -494,7 +499,6 @@ if (uploadForm) {
         formData.append('file', file);
 
         try {
-            // Cambiamos el texto del botón temporalmente
             const btn = uploadForm.querySelector('button[type="submit"]');
             const textoOriginal = btn.innerHTML;
             btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Cargando...';
@@ -509,13 +513,12 @@ if (uploadForm) {
 
             if (response.ok) {
                 alert('✅ ' + (data.mensaje || 'Reservas importadas con éxito'));
-                fileInput.value = ''; // Limpiamos el input
-                cargarReservas();     // Refrescamos la tabla instantáneamente
+                fileInput.value = ''; 
+                cargarReservas();     
             } else {
                 alert('❌ Error: ' + (data.error || 'No se pudo importar el archivo'));
             }
 
-            // Restauramos el botón a su estado normal
             btn.innerHTML = textoOriginal;
             btn.disabled = false;
 

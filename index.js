@@ -310,3 +310,60 @@ server.listen(PORT, () => {
     console.log('--- SISTEMA HOTEL DEL LLANO ONLINE CON LOGIN ---');
     console.log(`Servidor corriendo en el puerto ${PORT}...`);
 });
+
+
+// ==========================================================================
+// 🧹 MÓDULO AUTOMÁTICO: LIMPIEZA DE RESERVAS ANTIGUAS (TODOS LOS DÍAS 11 PM)
+// ==========================================================================
+const cron = require('node-cron'); // Importamos el programador de tareas
+
+/**
+ * Función maestra que elimina de la base de datos de Contabo
+ * todas las reservas cuya fecha de salida sea menor a la de hoy.
+ */
+async function ejecutarLimpiezaReservas() {
+    console.log("⏳ [Mantenimiento] Iniciando rutina automática de limpieza...");
+    try {
+        const queryLimpieza = `
+            DELETE FROM reservations 
+            WHERE fsalid_reh IS NOT NULL 
+              AND fsalid_reh::date < CURRENT_DATE;
+        `;
+        
+        const resultado = await pool.query(queryLimpieza);
+        console.log(`✅ [Mantenimiento] Limpieza exitosa de las 11:00 PM. Se eliminaron ${resultado.rowCount} reservas antiguas.`);
+    } catch (error) {
+        console.error("❌ [Mantenimiento] Error crítico en la rutina de limpieza:", error.message);
+    }
+}
+
+// PROGRAMACIÓN CRON: '0 23 * * *' significa: Minuto 0, Hora 23 (11 PM), todos los días.
+cron.schedule('0 23 * * *', () => {
+    ejecutarLimpiezaReservas();
+}, {
+    scheduled: true,
+    timezone: "America/Bogota" // Fuerza al servidor a usar la hora legal de Colombia
+});
+
+
+// ==========================================================================
+// 🔗 RUTA MANUAL: Por si quieres disparar la limpieza en cualquier momento
+// ==========================================================================
+app.delete('/api/reservas/limpieza-manual', verificarTokenBackend, async (req, res) => {
+    try {
+        const queryLimpieza = `
+            DELETE FROM reservations 
+            WHERE fsalid_reh IS NOT NULL 
+              AND fsalid_reh::date < CURRENT_DATE;
+        `;
+        const resultado = await pool.query(queryLimpieza);
+        
+        res.json({
+            success: true,
+            mensaje: "Mantenimiento manual completado con éxito",
+            eliminados: resultado.rowCount
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});

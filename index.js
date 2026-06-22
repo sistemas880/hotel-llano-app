@@ -133,19 +133,44 @@ app.get('/historial', verificarTokenBackend, async (req, res) => {
 
 app.get('/contactos', verificarTokenBackend, async (req, res) => {
     try {
-        const query = `
+        // 1. Intentamos la consulta avanzada cruzando los últimos 10 dígitos de forma segura
+        const queryAvanzada = `
             SELECT 
-                telefono, 
-                MAX(created_at) as ultima_fecha,
-                COUNT(*) FILTER (WHERE leido = FALSE AND direction = 'incoming') as sin_leer
-            FROM messages
-            GROUP BY telefono
+                m.telefono, 
+                MAX(m.created_at) as ultima_fecha,
+                COUNT(*) FILTER (WHERE m.leido = FALSE AND m.direction = 'incoming') as sin_leer,
+                (
+                    SELECT r.nombre_res 
+                    FROM reservations r 
+                    WHERE r.telef_res IS NOT NULL 
+                      AND RIGHT(r.telef_res::text, 10) = RIGHT(m.telefono::text, 10) 
+                    LIMIT 1
+                ) as nombre
+            FROM messages m
+            GROUP BY m.telefono
             ORDER BY ultima_fecha DESC
         `;
-        const result = await pool.query(query);
-        res.json(result.rows);
+        const result = await pool.query(queryAvanzada);
+        return res.json(result.rows);
     } catch (err) {
-        res.status(500).json({ error: "Error al obtener contactos" });
+        // 2. SISTEMA DE RESPALDO: Si la DB da error por tipos de datos, usa la consulta original para NO romper la pantalla
+        console.error("⚠️ Alerta: La consulta de nombres falló, usando respaldo simple:", err.message);
+        
+        try {
+            const queryRespaldo = `
+                SELECT 
+                    telefono, 
+                    MAX(created_at) as ultima_fecha,
+                    COUNT(*) FILTER (WHERE leido = FALSE AND direction = 'incoming') as sin_leer
+                FROM messages
+                GROUP BY telefono
+                ORDER BY ultima_fecha DESC
+            `;
+            const resultRespaldo = await pool.query(queryRespaldo);
+            return res.json(resultRespaldo.rows);
+        } catch (err2) {
+            return res.status(500).json({ error: "Error crítico en la base de datos" });
+        }
     }
 });
 

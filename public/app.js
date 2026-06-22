@@ -81,6 +81,7 @@ async function cargarContactos() {
                 }
             }
 
+            // Renderizado seguro: si no hay nombre, muestra el teléfono como antes
             item.innerHTML = `
                 <div class="d-flex align-items-center justify-content-between w-100">
                     <div class="d-flex align-items-center">
@@ -91,7 +92,7 @@ async function cargarContactos() {
                             ${tienePendientes ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 12px; height: 12px;"></span>' : ''}
                         </div>
                         <div>
-                            <h6 class="mb-0 ${tienePendientes ? 'fw-bold text-dark' : ''}">${c.telefono}</h6>
+                            <h6 class="mb-0 ${tienePendientes ? 'fw-bold text-dark' : ''}">${c.nombre || c.telefono}</h6>
                             <small class="${tienePendientes ? 'text-success fw-bold' : 'text-muted'}">
                                 ${tienePendientes ? 'Nuevo mensaje...' : 'Ver conversación'}
                             </small>
